@@ -1,0 +1,192 @@
+{% comment %}
+  产品详情页底部相关推荐（You may also like）
+  数据来源：Shopify 官方 Product Recommendations API（intent=related）
+  交互：横向滑动 + 进度条 + 左右箭头
+{% endcomment %}
+
+{%- liquid
+  assign rec_url = ''
+  if product and product.id
+    assign rec_url = routes.product_recommendations_url | append: '?section_id=' | append: section.id | append: '&product_id=' | append: product.id | append: '&limit=' | append: section.settings.products_to_show | append: '&intent=related'
+  endif
+-%}
+
+<div
+  class="product-recommendations"
+  {% if section.settings.full_width == false %}style="max-width: 1280px; margin: 0 auto;"{% endif %}
+>
+  <div
+    data-product-recommendations
+    data-url="{{ rec_url }}"
+    {% if recommendations.performed and recommendations.products_count == 0 %}data-empty{% endif %}
+  >
+    {%- if recommendations.performed -%}
+      {%- if recommendations.products_count > 0 -%}
+        <div class="rec-header">
+          <h2 class="rec-header__title">{{ section.settings.heading | escape }}</h2>
+          {%- if section.settings.link_text != blank -%}
+            <a class="rec-header__link" href="{{ section.settings.link_url }}">{{ section.settings.link_text | escape }}</a>
+          {%- endif -%}
+        </div>
+        <div class="rec-slider" data-rec-slider>
+          {%- for recommended_product in recommendations.products -%}
+            <div class="rec-slider__item">
+              {%- render 'product-card', product: recommended_product -%}
+            </div>
+          {%- endfor -%}
+        </div>
+        <div class="rec-footer">
+          <div class="rec-progress" data-rec-track>
+            <div class="rec-progress__fill" data-rec-fill></div>
+          </div>
+          <div class="rec-arrows">
+            <button type="button" class="rec-arrow" data-rec-prev aria-label="Previous">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <button type="button" class="rec-arrow" data-rec-next aria-label="Next">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+        </div>
+      {%- endif -%}
+    {%- else -%}
+      <div class="rec-loading">
+        <span class="rec-loading__spinner" aria-hidden="true"></span>
+        <span class="rec-loading__text">Loading recommendations…</span>
+      </div>
+    {%- endif -%}
+  </div>
+</div>
+
+<script>
+  (function () {
+    'use strict';
+
+    function initSlider(root) {
+      var slider = root.querySelector('[data-rec-slider]');
+      if (!slider || slider.dataset.recInit) return;
+      slider.dataset.recInit = '1';
+
+      var track = root.querySelector('[data-rec-track]');
+      var fill = root.querySelector('[data-rec-fill]');
+      var prev = root.querySelector('[data-rec-prev]');
+      var next = root.querySelector('[data-rec-next]');
+
+      function itemStep() {
+        var item = slider.querySelector('.rec-slider__item');
+        if (!item) return 300;
+        var gap = parseFloat(getComputedStyle(slider).columnGap || getComputedStyle(slider).gap) || 24;
+        return item.getBoundingClientRect().width + gap;
+      }
+
+      function update() {
+        var max = slider.scrollWidth - slider.clientWidth;
+        if (track && fill) {
+          var trackW = track.clientWidth;
+          var ratio = max > 0 ? slider.clientWidth / slider.scrollWidth : 1;
+          var fillW = Math.max(40, Math.min(trackW, ratio * trackW));
+          var p = max > 0 ? slider.scrollLeft / max : 0;
+          fill.style.width = fillW + 'px';
+          fill.style.transform = 'translateX(' + (p * (trackW - fillW)) + 'px)';
+        }
+        if (prev) prev.disabled = slider.scrollLeft <= 2;
+        if (next) next.disabled = slider.scrollLeft >= max - 2;
+      }
+
+      if (prev) prev.addEventListener('click', function () { slider.scrollBy({ left: -itemStep(), behavior: 'smooth' }); });
+      if (next) next.addEventListener('click', function () { slider.scrollBy({ left: itemStep(), behavior: 'smooth' }); });
+      slider.addEventListener('scroll', update, { passive: true });
+      window.addEventListener('resize', update);
+      update();
+    }
+
+    function loadRecommendations() {
+      document.querySelectorAll('[data-product-recommendations]').forEach(function (container) {
+        var url = container.getAttribute('data-url');
+        if (!url || container.dataset.recLoaded) return;
+        container.dataset.recLoaded = '1';
+
+        // 空结果：整个 section 隐藏
+        if (container.hasAttribute('data-empty')) {
+          var sec = container.closest('.product-recommendations');
+          if (sec) sec.style.display = 'none';
+          return;
+        }
+
+        fetch(url)
+          .then(function (res) { return res.text(); })
+          .then(function (text) {
+            var doc = new DOMParser().parseFromString(text, 'text/html');
+            var fresh = doc.querySelector('[data-product-recommendations]');
+            if (!fresh) return;
+            if (fresh.hasAttribute('data-empty') || fresh.innerHTML.trim() === '') {
+              var sec = container.closest('.product-recommendations');
+              if (sec) sec.style.display = 'none';
+              return;
+            }
+            container.innerHTML = fresh.innerHTML;
+            initSlider(container);
+          })
+          .catch(function () {
+            // 加载失败：隐藏整个 section（连同 loading）
+            var sec = container.closest('.product-recommendations');
+            if (sec) sec.style.display = 'none';
+          });
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', loadRecommendations);
+    } else {
+      loadRecommendations();
+    }
+
+    document.addEventListener('shopify:section:load', function (e) {
+      if (e.target && e.target.querySelector('[data-product-recommendations]')) {
+        loadRecommendations();
+      }
+    });
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "You may also like",
+  "tag": "section",
+  "class": "section-product-recommendations",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "标题",
+      "default": "You may also like"
+    },
+    {
+      "type": "text",
+      "id": "link_text",
+      "label": "右侧链接文字",
+      "default": "Shop All Lighting"
+    },
+    {
+      "type": "url",
+      "id": "link_url",
+      "label": "右侧链接地址"
+    },
+    {
+      "type": "range",
+      "id": "products_to_show",
+      "label": "推荐产品数量上限",
+      "min": 4,
+      "max": 10,
+      "step": 1,
+      "default": 8
+    },
+    {
+      "type": "checkbox",
+      "id": "full_width",
+      "label": "全宽显示",
+      "default": true
+    }
+  ]
+}
+{% endschema %}

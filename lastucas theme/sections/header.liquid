@@ -1,0 +1,137 @@
+{% comment %}
+  Header - 三栏布局：Logo 左 / 导航中 / 图标右
+  对应截图 SUNMORY 导航
+{% endcomment %}
+<header class="header" style="background-color: {{ section.settings.bg_color }};">
+  <div class="header__inner container">
+
+    {% comment %} 左：汉堡菜单 {% endcomment %}
+    <button class="header__menu-toggle" aria-label="Menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+
+    {% comment %} 中：Logo {% endcomment %}
+    <div class="header__logo">
+      {% if section.settings.logo != blank %}
+        <a href="{{ routes.root_url }}">
+          <img src="{{ section.settings.logo | image_url: width: 240 }}" alt="{{ shop.name | escape }}" style="max-height: 40px; width: auto;">
+        </a>
+      {% else %}
+        <a href="{{ routes.root_url }}" class="header__logo-text">LASTUCAS</a>
+      {% endif %}
+    </div>
+
+    {% comment %} 中：主导航 {% endcomment %}
+    <nav class="header__nav" aria-label="Main navigation">
+      {% if section.settings.menu != blank %}
+        <ul class="header__nav-list">
+          {% for link in section.settings.menu.links %}
+            <li class="header__nav-item">
+              <a href="{{ link.url }}" class="header__nav-link {% if link.active %}is-active{% endif %}">
+                {{ link.title | escape }}
+                {% if link.links.size > 0 %}
+                  <span class="header__nav-caret">▾</span>
+                {% endif %}
+              </a>
+              {% if link.links.size > 0 %}
+                <ul class="header__dropdown">
+                  {% for child in link.links %}
+                    <li><a href="{{ child.url }}">{{ child.title | escape }}</a></li>
+                  {% endfor %}
+                </ul>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </nav>
+
+    {% comment %} 右：搜索 / 账户 / 购物车 {% endcomment %}
+    <div class="header__icons">
+      <button type="button" class="header__icon" aria-label="Search" data-search-open>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+      </button>
+      <a href="{{ routes.account_url }}" class="header__icon" aria-label="Account">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+      </a>
+      <button type="button" class="header__icon header__cart" aria-label="Cart" data-cart-open>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="9" cy="21" r="1"></circle>
+          <circle cx="20" cy="21" r="1"></circle>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+        </svg>
+        <span class="header__cart-count cart-count" {% if cart.item_count == 0 %}hidden{% endif %}>{{ cart.items.size }}</span>
+      </button>
+    </div>
+
+  </div>
+</header>
+
+{% comment %} 回到顶部按钮：独立 fixed 悬浮（右下角），不占导航栏布局 {% endcomment %}
+<button type="button" class="back-to-top" aria-label="Back to top" data-back-to-top>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
+</button>
+
+{% comment %} 移动端抽屉菜单 {% endcomment %}
+<div class="mobile-menu" data-mobile-menu aria-hidden="true">
+  <div class="mobile-menu__overlay" data-mobile-menu-close></div>
+  <aside class="mobile-menu__panel" role="dialog" aria-label="Mobile menu">
+    <button type="button" class="mobile-menu__close" data-mobile-menu-close aria-label="Close menu">×</button>
+    
+    <div class="mobile-menu__logo">
+      {% if section.settings.logo != blank %}
+        <a href="{{ routes.root_url }}">
+          <img src="{{ section.settings.logo | image_url: width: 240 }}" alt="{{ shop.name | escape }}" style="max-height: 40px; width: auto;">
+        </a>
+      {% else %}
+        <a href="{{ routes.root_url }}" class="header__logo-text">LASTUCAS</a>
+      {% endif %}
+    </div>
+
+    <nav class="mobile-menu__nav">
+      {% if section.settings.menu != blank %}
+        <ul class="mobile-menu__list">
+          {% for link in section.settings.menu.links %}
+            <li class="mobile-menu__item">
+              <a href="{{ link.url }}" class="mobile-menu__link">
+                {{ link.title | escape }}
+                {% if link.links.size > 0 %}
+                  <span class="mobile-menu__arrow">›</span>
+                {% endif %}
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </nav>
+
+  </aside>
+</div>
+
+{% schema %}
+{
+  "name": "Header",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "logo",
+      "label": "Logo image"
+    },
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "Menu",
+      "default": "main-menu"
+    },
+    {
+      "type": "color",
+      "id": "bg_color",
+      "label": "Background color",
+      "default": "#FFFFFF"
+    }
+  ],
+  "presets": [
+    { "name": "Header" }
+  ]
+}
+{% endschema %}

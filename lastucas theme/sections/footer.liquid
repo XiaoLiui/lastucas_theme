@@ -1,0 +1,210 @@
+{% comment %}
+  Footer - 4 列：品牌信息 / About / Support / Services + 订阅
+{% endcomment %}
+<footer class="footer">
+  <div class="container">
+
+    {% comment %} Newsletter 区块（footer 顶部，全站每页展示） {% endcomment %}
+    <div class="footer__newsletter">
+      <div class="footer__newsletter-left">
+        <h2 class="footer__newsletter-title">{{ section.settings.newsletter_title | escape }}</h2>
+        {% if section.settings.newsletter_help != blank %}
+          <p class="footer__newsletter-help">
+            {{ section.settings.newsletter_help | escape }}
+            {% if section.settings.newsletter_email != blank %}
+              <a class="footer__newsletter-email" href="mailto:{{ section.settings.newsletter_email | escape }}">{{ section.settings.newsletter_email | escape }}</a>
+            {% endif %}
+          </p>
+        {% endif %}
+      </div>
+      <div class="footer__newsletter-right">
+        <h2 class="footer__newsletter-heading">{{ section.settings.newsletter_heading | escape }}</h2>
+        {% if section.settings.newsletter_desc != blank %}
+          <p class="footer__newsletter-desc">{{ section.settings.newsletter_desc | escape }}</p>
+        {% endif %}
+        {% form 'customer', class: 'footer__newsletter-form' %}
+          <input type="hidden" name="contact[tags]" value="newsletter">
+          <div class="footer__newsletter-row">
+            <input type="email" name="contact[email]" placeholder="{{ section.settings.newsletter_placeholder | escape }}" required aria-label="Email address">
+            <button type="submit">{{ section.settings.newsletter_button | escape }}</button>
+          </div>
+          {% if form.posted_successfully? %}
+            <p class="footer__newsletter-success">Thanks for subscribing!</p>
+          {% endif %}
+        {% endform %}
+        {% if section.settings.newsletter_legal != blank %}
+          <p class="footer__newsletter-legal">{{ section.settings.newsletter_legal | escape }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="footer__grid">
+
+      <div class="footer__col footer__col--brand">
+        {% if section.settings.logo %}
+          <img class="footer__logo-img" src="{{ section.settings.logo | image_url: width: 220 }}" alt="{{ shop.name | escape }}" loading="lazy">
+        {% else %}
+          <div class="footer__logo">{{ section.settings.logo_text | escape }}</div>
+        {% endif %}
+        <p class="footer__address">{{ section.settings.address | escape }}</p>
+        <p class="footer__help">{{ section.settings.help_text | escape }}</p>
+        <p class="footer__contact">
+          <span>📞 {{ section.settings.phone | escape }}</span><br>
+          <span>{{ section.settings.hours | escape }}</span><br>
+          <span>✉️ {{ section.settings.email | escape }}</span>
+        </p>
+      </div>
+
+      {% comment %} 从 Shopify 默认 Footer menu 读取链接，每个顶级链接作为一列标题（纯文本，不可点击） {% endcomment %}
+      {% if linklists.footer.links.size > 0 %}
+        {% for link in linklists.footer.links %}
+          <div class="footer__col">
+            <h4 class="footer__heading">{{ link.title | escape }}</h4>
+            <ul class="footer__links">
+              {% if link.links.size > 0 %}
+                {% for child in link.links %}
+                  <li><a href="{{ child.url }}">{{ child.title | escape }}</a></li>
+                {% endfor %}
+              {% else %}
+                <li><a href="{{ link.url }}">{{ link.title | escape }}</a></li>
+              {% endif %}
+            </ul>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="footer__col">
+          <h4 class="footer__heading">ABOUT</h4>
+          <ul class="footer__links">
+            <li><a href="/pages/contact">Contact Us</a></li>
+            <li><a href="/policies/privacy-policy">Privacy Policy</a></li>
+            <li><a href="/policies/terms-of-service">Terms of Service</a></li>
+            <li><a href="/pages/about-us">About us</a></li>
+          </ul>
+        </div>
+
+        <div class="footer__col">
+          <h4 class="footer__heading">SUPPORT</h4>
+          <ul class="footer__links">
+            <li><a href="/policies/shipping-policy">Shipping</a></li>
+            <li><a href="/policies/refund-policy">Returns</a></li>
+            <li><a href="/pages/faq">FAQ</a></li>
+            <li><a href="#">Installation Video</a></li>
+          </ul>
+        </div>
+      {% endif %}
+
+    </div>
+
+  </div>
+  <div class="footer__copyright">{{ section.settings.copyright | escape }}</div>
+</footer>
+
+{% schema %}
+{
+  "name": "Footer",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "logo",
+      "label": "Logo image"
+    },
+    {
+      "type": "text",
+      "id": "logo_text",
+      "label": "Logo text (shown when no logo image)",
+      "default": "LASTUCAS"
+    },
+    {
+      "type": "text",
+      "id": "address",
+      "label": "Address",
+      "default": "16115 Rockaway Blvd 204, Jamaica, NY 11434, USA"
+    },
+    {
+      "type": "text",
+      "id": "help_text",
+      "label": "Help text",
+      "default": "We're Here Help, To Contact Us!"
+    },
+    {
+      "type": "text",
+      "id": "phone",
+      "label": "Phone",
+      "default": "+1-(866)9435295"
+    },
+    {
+      "type": "text",
+      "id": "hours",
+      "label": "Business hours",
+      "default": "Mon - Friday: 10AM - 7PM (PST)"
+    },
+    {
+      "type": "text",
+      "id": "email",
+      "label": "Email",
+      "default": "support@sunmory.com"
+    },
+    {
+      "type": "header",
+      "content": "Newsletter"
+    },
+    {
+      "type": "text",
+      "id": "newsletter_title",
+      "label": "Left title",
+      "default": "Stay in touch"
+    },
+    {
+      "type": "text",
+      "id": "newsletter_help",
+      "label": "Left help text (before email)",
+      "default": "Need help choosing a lamp? Contact"
+    },
+    {
+      "type": "text",
+      "id": "newsletter_email",
+      "label": "Contact email (clickable)",
+      "default": "support@lastucas.com"
+    },
+    {
+      "type": "text",
+      "id": "newsletter_heading",
+      "label": "Right heading",
+      "default": "Lighting ideas, straight to your inbox"
+    },
+    {
+      "type": "textarea",
+      "id": "newsletter_desc",
+      "label": "Right description",
+      "default": "Get new lamp launches, home lighting tips, and exclusive LASTUCAS offers delivered to your inbox."
+    },
+    {
+      "type": "text",
+      "id": "newsletter_placeholder",
+      "label": "Email placeholder",
+      "default": "Email address"
+    },
+    {
+      "type": "text",
+      "id": "newsletter_button",
+      "label": "Button text",
+      "default": "SUBSCRIBE TO NEWSLETTER"
+    },
+    {
+      "type": "textarea",
+      "id": "newsletter_legal",
+      "label": "Legal small print",
+      "default": "Your email address will only be used to send you our newsletter, as well as updates and offers. You can unsubscribe at any time using the link included in the newsletter. Learn more about how we manage your data and your rights."
+    },
+    {
+      "type": "text",
+      "id": "copyright",
+      "label": "Copyright text",
+      "default": "© 2026 LASTUCAS. All rights reserved."
+    }
+  ],
+  "presets": [
+    { "name": "Footer" }
+  ]
+}
+{% endschema %}

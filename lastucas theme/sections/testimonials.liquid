@@ -1,0 +1,65 @@
+{% comment %}
+  Testimonials - 交替左右头像+引言
+{% endcomment %}
+<section class="testimonials">
+  <div class="container">
+    <h2 class="testimonials__title">{{ section.settings.title | escape | newline_to_br }}</h2>
+    <div class="testimonials__list">
+      {% for block in section.blocks %}
+        <div class="testimonial {% cycle 'testimonial--left', 'testimonial--right' %}">
+          <div class="testimonial__avatar">
+            {% if block.settings.avatar != blank %}
+              <img src="{{ block.settings.avatar | image_url: width: 200 }}" alt="{{ block.settings.author | escape }}">
+            {% else %}
+              <div class="testimonial__avatar-placeholder">{{ block.settings.author | slice: 0 }}</div>
+            {% endif %}
+          </div>
+          <div class="testimonial__body">
+            <p class="testimonial__text">{{ block.settings.quote | escape }}</p>
+            <div class="testimonial__meta">
+              <div class="testimonial__date">{{ block.settings.date | escape }}</div>
+              <div class="testimonial__author">{{ block.settings.author | escape }}</div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Testimonials",
+  "max_blocks": 6,
+  "settings": [
+    {
+      "type": "textarea",
+      "id": "title",
+      "label": "Heading",
+      "default": "WHAT OUR CUSTOMER\nARE SAYING"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "testimonial",
+      "name": "Testimonial",
+      "settings": [
+        { "type": "textarea", "id": "quote", "label": "Quote", "default": "Very easy to assemble. The remote control is heaven." },
+        { "type": "image_picker", "id": "avatar", "label": "Avatar" },
+        { "type": "text", "id": "author", "label": "Author", "default": "Emily Johnson" },
+        { "type": "text", "id": "date", "label": "Date", "default": "August 2, 2024" }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Testimonials",
+      "blocks": [
+        { "type": "testimonial", "settings": { "quote": "I purchased this lamp and sat it aside. I finally decided to put it together. It's very easy to assemble. The remote control is heaven. I like being able to use the remote to dim or brighten.", "author": "Emily Johnson", "date": "August 2, 2024" } },
+        { "type": "testimonial", "settings": { "quote": "After a fairly easy assembly, I was amazed by the difference features and light tones for different situations.", "author": "James Smith", "date": "November 28, 2023" } },
+        { "type": "testimonial", "settings": { "quote": "I needed a new lamp and I also wanted a new 'charging' area. This lamp hit two birds with one stone. Love the look, the charging area, and the lighting options.", "author": "Sophia Williams", "date": "November 18, 2022" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

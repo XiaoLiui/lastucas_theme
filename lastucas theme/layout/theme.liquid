@@ -1,0 +1,179 @@
+{% comment %}
+  LASTUCAS Theme - Global Layout
+  Version: 1.0.0
+  所有页面共用的 HTML 骨架。header / footer 作为 section 在 templates/*.json 里挂载。
+{% endcomment %}
+<!doctype html>
+<html lang="{{ request.locale.iso_code }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="{{ settings.color_background }}">
+  <meta name="theme-version" content="1.0.0">
+
+  <title>{{ page_title }}{% if current_tags %} &ndash; tagged "{{ current_tags | join: ', ' }}"{% endif %}{% if current_page != 1 %} &ndash; Page {{ current_page }}{% endif %}{% unless page_title contains shop.name %} &ndash; {{ shop.name }}{% endunless %}</title>
+
+  {% if settings.favicon != blank %}
+    <link rel="icon" type="image/png" href="{{ settings.favicon | image_url: width: 32, height: 32 }}">
+  {% endif %}
+
+  {% comment %} SEO / Open Graph {% endcomment %}
+  {% render 'meta-tags' %}
+
+  {% comment %} 全局样式（一个文件） {% endcomment %}
+  {{ 'base.css' | asset_url | stylesheet_tag }}
+
+  {% comment %} Shopify 必须注入的脚本，不能删 {% endcomment %}
+  {{ content_for_header }}
+
+  {% comment %} 注入登录状态，供购物车逻辑区分登录/未登录 {% endcomment %}
+  <script>
+    window.SUNMORY = {
+      customerLoggedIn: {% if customer %}true{% else %}false{% endif %},
+      moneyFormat: {{ shop.money_format | json }},
+      moneyWithCurrencyFormat: {{ shop.money_with_currency_format | json }}
+    };
+  </script>
+
+  {% comment %} 品牌自定义 CSS 变量（颜色/字体从主题设置里读） {% endcomment %}
+  <style>
+    :root {
+      --color-bg: {{ settings.color_background }};
+      --color-text: {{ settings.color_text }};
+      --color-accent: {{ settings.color_accent }};
+      --font-body: {{ settings.font_body.family }};
+    }
+  </style>
+</head>
+
+<body class="template-{{ request.page_type | handle }}">
+
+  <a class="skip-link visually-hidden" href="#MainContent">Skip to content</a>
+
+  {% comment %} 全局公告条 + Header（所有页面通用） {% endcomment %}
+  {% section 'announcement-bar' %}
+  {% section 'header' %}
+
+  <main id="MainContent" role="main">
+    {{ content_for_layout }}
+  </main>
+
+  {% comment %} 全局 Footer（所有页面通用） {% endcomment %}
+  {% section 'footer' %}
+
+  {% comment %} 全局 JS（一个文件：轮播、移动端菜单、购物车抽屉） {% endcomment %}
+  <script src="{{ 'theme.js' | asset_url }}" defer></script>
+
+  {% comment %} 搜索抽屉（全局，所有页面可用） {% endcomment %}
+  <div class="search-drawer" data-search-drawer aria-hidden="true">
+    <div class="search-drawer__overlay" data-search-close></div>
+    <aside class="search-drawer__panel" role="dialog" aria-label="Search">
+      <header class="search-drawer__header">
+        <h2>Search</h2>
+        <button type="button" class="search-drawer__close" data-search-close aria-label="Close">×</button>
+      </header>
+      <div class="search-drawer__body">
+        <form action="{{ routes.search_url }}" method="get" class="search-drawer__form" data-search-form>
+          <input type="text" name="q" placeholder="Search our store..." class="search-drawer__input" data-search-input>
+          <button type="submit" class="search-drawer__submit">Search</button>
+        </form>
+
+        {% comment %} 默认显示热门产品推荐 {% endcomment %}
+        <div class="search-drawer__trending" data-search-trending>
+          <div class="search-drawer__group-title">Trending Now</div>
+          <div class="search-drawer__trending-grid">
+            {% for product in collections.all.products limit: 4 %}
+              <a href="{{ product.url }}" class="search-drawer__trending-item">
+                {% if product.featured_image %}
+                  <img src="{{ product.featured_image | image_url: width: 200 }}" alt="{{ product.title | escape }}">
+                {% else %}
+                  <img src="{{ 'hero-default.jpg' | asset_url }}" alt="Product">
+                {% endif %}
+                <div class="search-drawer__trending-title">{{ product.title | truncate: 30 }}</div>
+                <div class="search-drawer__trending-price">{{ product.price | money }}</div>
+              </a>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="search-drawer__loading" data-search-loading hidden>
+          <div class="search-drawer__spinner"></div>
+          <span>Searching...</span>
+        </div>
+        <div class="search-drawer__results" data-search-results></div>
+      </div>
+    </aside>
+  </div>
+
+  {% comment %} 购物车抽屉（全局，所有页面可用） {% endcomment %}
+  <div class="cart-drawer" data-cart-drawer aria-hidden="true">
+    <div class="cart-drawer__overlay" data-cart-close></div>
+    <aside class="cart-drawer__panel" role="dialog" aria-label="Shopping cart">
+      <header class="cart-drawer__header">
+        <h2 class="cart-drawer__title">Cart <span class="cart-drawer__count-badge cart-count" hidden>0</span></h2>
+        <div class="cart-drawer__header-actions">
+          <button type="button" class="cart-drawer__clear" data-cart-clear aria-label="Clear cart" hidden>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+          </button>
+          <button type="button" class="cart-drawer__close" data-cart-close aria-label="Close">×</button>
+        </div>
+      </header>
+
+      <p class="cart-drawer__shipping-msg" data-cart-shipping hidden></p>
+
+      <div class="cart-drawer__body" data-cart-body>
+        <div class="cart-drawer__loading">Loading…</div>
+      </div>
+
+      <footer class="cart-drawer__footer" data-cart-footer hidden>
+        <div class="cart-drawer__total-row">
+          <span class="cart-drawer__total-label">Total</span>
+          <strong class="cart-drawer__total-price" data-cart-subtotal></strong>
+        </div>
+        <p class="cart-drawer__note">Tax included. <a href="/policies/shipping-policy">Shipping</a> calculated at checkout.</p>
+        <div class="cart-drawer__order-note">
+          <button type="button" class="cart-drawer__order-note-toggle" data-order-note-toggle>Add order note</button>
+          <textarea class="cart-drawer__order-note-input" data-order-note-input rows="3" placeholder="Add special instructions for your order..." hidden></textarea>
+        </div>
+        <div class="cart-drawer__actions">
+          <a href="{{ routes.cart_url }}" class="cart-drawer__view-cart-btn">View cart</a>
+          <form action="{{ routes.cart_url }}" method="post" class="cart-drawer__checkout-form">
+            <button type="submit" name="checkout" class="cart-drawer__checkout-btn">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+              Checkout
+            </button>
+          </form>
+        </div>
+      </footer>
+
+      {% comment %} 空购物车时显示的推荐产品 {% endcomment %}
+      <div class="cart-drawer__recommendations" data-cart-recommendations hidden>
+        <div class="cart-drawer__rec-title">You may also like</div>
+        <div class="cart-drawer__rec-grid">
+          {% for product in collections.all.products limit: 4 %}
+            <a href="{{ product.url }}" class="cart-drawer__rec-item">
+              {% if product.featured_image %}
+                <img src="{{ product.featured_image | image_url: width: 400 }}" alt="{{ product.title | escape }}">
+              {% endif %}
+              <div class="cart-drawer__rec-name">{{ product.title | escape }} →</div>
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  {% comment %} 通用确认弹窗（清空购物车等危险操作） {% endcomment %}
+  <div class="confirm-modal" data-confirm-modal hidden>
+    <div class="confirm-modal__overlay" data-confirm-cancel></div>
+    <div class="confirm-modal__card" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+      <h3 class="confirm-modal__title" id="confirm-title" data-confirm-title>Clear your cart?</h3>
+      <p class="confirm-modal__desc" data-confirm-desc>This will remove all items from your cart. This action cannot be undone.</p>
+      <div class="confirm-modal__actions">
+        <button type="button" class="confirm-modal__btn confirm-modal__btn--ghost" data-confirm-cancel>Cancel</button>
+        <button type="button" class="confirm-modal__btn confirm-modal__btn--danger" data-confirm-ok>Clear cart</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

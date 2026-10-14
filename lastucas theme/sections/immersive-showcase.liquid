@@ -1,0 +1,96 @@
+{% comment %}
+  Immersive Showcase - 滚动驱动动画区
+  效果：
+  1. 初始：大圆角卡片，两边留白
+  2. 滚动中：圆角消失，宽度撑满全宽
+  3. 继续滚动：画面从白天渐暗到夜晚
+  4. 再滚动：灯亮 + 产品卡片弹出
+{% endcomment %}
+<section class="immersive" data-immersive>
+  <div class="container">
+    <h2 class="immersive__title">{{ section.settings.title | escape | newline_to_br }}</h2>
+  </div>
+
+  <div class="immersive__stage" data-stage>
+    <div class="immersive__image-wrap" data-image-wrap>
+      {% if section.settings.image != blank %}
+        <img src="{{ section.settings.image | image_url: width: 2000 }}" alt="{{ section.settings.title | escape }}" class="immersive__image" data-image>
+      {% else %}
+        <img src="{{ 'hero-default.jpg' | asset_url }}" alt="Product scene" class="immersive__image" data-image>
+      {% endif %}
+      <div class="immersive__dark-overlay" data-overlay></div>
+    </div>
+
+    <!-- 产品卡片（滚动到最后弹出） -->
+    <div class="immersive__card" data-card>
+      <div class="immersive__card-img">
+        {% if section.settings.product_image != blank %}
+          <img src="{{ section.settings.product_image | image_url: width: 600 }}" alt="{{ section.settings.product_title | escape }}">
+        {% else %}
+          <img src="{{ 'hero-default.jpg' | asset_url }}" alt="Product">
+        {% endif %}
+      </div>
+      <div class="immersive__card-info">
+        <div class="immersive__card-title">{{ section.settings.product_title | escape }}</div>
+        <div class="immersive__card-sub">{{ section.settings.product_subtitle | escape }}</div>
+        <div class="immersive__card-price">
+          <span class="immersive__card-price--sale">{{ section.settings.product_price | escape }}</span>
+          {% if section.settings.product_compare_price != blank %}
+            <span class="immersive__card-price--original">{{ section.settings.product_compare_price | escape }}</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Immersive Showcase",
+  "settings": [
+    {
+      "type": "textarea",
+      "id": "title",
+      "label": "Heading",
+      "default": "ALL YOU'LL NEED\nRIGHT HERE"
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Background image"
+    },
+    {
+      "type": "image_picker",
+      "id": "product_image",
+      "label": "Product image"
+    },
+    {
+      "type": "text",
+      "id": "product_title",
+      "label": "Product title",
+      "default": "Dimmable shelf floor lamp"
+    },
+    {
+      "type": "text",
+      "id": "product_subtitle",
+      "label": "Product subtitle",
+      "default": "with 1 Drawer and 2 USB Ports"
+    },
+    {
+      "type": "text",
+      "id": "product_price",
+      "label": "Price",
+      "default": "$82.99"
+    },
+    {
+      "type": "text",
+      "id": "product_compare_price",
+      "label": "Compare-at price",
+      "default": "$102.99"
+    }
+  ],
+  "presets": [
+    { "name": "Immersive Showcase" }
+  ]
+}
+{% endschema %}

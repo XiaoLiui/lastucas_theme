@@ -1,0 +1,24 @@
+{
+  "sections": {
+    "main": {
+      "type": "main-product"
+    },
+    "usage-scenes": {
+      "type": "usage-scenes",
+      "settings": {
+        "heading": "Designed for every space"
+      }
+    },
+    "recommendations": {
+      "type": "product-recommendations",
+      "settings": {
+        "heading": "You may also like",
+        "link_text": "Shop All Lighting",
+        "link_url": "/collections/all",
+        "products_to_show": 8,
+        "full_width": true
+      }
+    }
+  },
+  "order": ["main", "usage-scenes", "recommendations"]
+}

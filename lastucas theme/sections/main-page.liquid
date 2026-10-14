@@ -1,0 +1,93 @@
+{% comment %} 静态页面（About Us / Contact 等） {% endcomment %}
+
+{% comment %} 1. 顶部 Hero 横幅 {% endcomment %}
+<section class="about-hero">
+  <img src="{{ 'hero-default.jpg' | asset_url }}" alt="About Us" class="about-hero__bg">
+  <div class="about-hero__overlay"></div>
+  <div class="about-hero__text">
+    <h1 class="about-hero__title">4 YEARS</h1>
+    <p class="about-hero__subtitle">FOCUS ON HOME LIGHTING TECHNOLOGY</p>
+  </div>
+</section>
+
+{% comment %} 2. 两列数据展示 {% endcomment %}
+<section class="about-stats">
+  <div class="about-stats__row">
+    <div class="about-stats__item">
+      <h2 class="about-stats__number">200 M</h2>
+      <p class="about-stats__label">TRUSTED BY AMERICAN FAMILIES</p>
+    </div>
+    <div class="about-stats__item">
+      <h2 class="about-stats__number">TOP 1</h2>
+      <p class="about-stats__label">MOST VALUABLE BRAND IN U.S.</p>
+    </div>
+  </div>
+</section>
+
+{% comment %} 3. 文字区块 1 {% endcomment %}
+<section class="about-content">
+  <div class="container">
+    <div class="about-content__row">
+      <div class="about-content__text">
+        <h2 class="about-content__heading">LIGHT YOUR HOME.<br>LOVE IT MORE.</h2>
+        <p class="about-content__desc">
+          Sunmory's dedication to lighting innovation hasn't wavered since 2020.<br>
+          We're your one-stop shop for all things illumination, offering a vast<br>
+          selection of floor lamps, fan lamps, and integrated lighting furniture – all<br>
+          at affordable prices.
+        </p>
+        <p class="about-content__desc">
+          Homeowners choose Sunmory first. Big dreams?<br>
+          We make them bright.
+        </p>
+      </div>
+      <div class="about-content__image">
+        <img src="{{ 'hero-default.jpg' | asset_url }}" alt="Lamp illustration">
+      </div>
+    </div>
+  </div>
+</section>
+
+{% comment %} 4. 文字区块 2 {% endcomment %}
+<section class="about-content about-content--reverse">
+  <div class="container">
+    <div class="about-content__row">
+      <div class="about-content__image">
+        <img src="{{ 'hero-default.jpg' | asset_url }}" alt="Hand holding lamp">
+      </div>
+      <div class="about-content__text">
+        <h2 class="about-content__heading">NOT JUST.<br>LIGHTING ILLUMINATE<br>YOUR SPACE.</h2>
+        <p class="about-content__desc about-content__desc--center">
+          We don't sell lights, we craft lighting journeys. Effortless for you.<br>
+          exceptional from start to finish. You and our dedicated support<br>
+          team, together we illuminate your vision.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% comment %} 5. Sustainability 区块 {% endcomment %}
+<section class="about-content">
+  <div class="container">
+    <div class="about-content__row">
+      <div class="about-content__text">
+        <h2 class="about-content__heading">SUSTAINABILITY</h2>
+        <p class="about-content__desc">
+          Crafted for generations, our timeless lamps are built<br>
+          with enduring materials for a sustainable lifecycle.
+        </p>
+      </div>
+      <div class="about-content__image">
+        <img src="{{ 'hero-default.jpg' | asset_url }}" alt="Sustainability">
+      </div>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Main Page",
+  "settings": []
+}
+{% endschema %}

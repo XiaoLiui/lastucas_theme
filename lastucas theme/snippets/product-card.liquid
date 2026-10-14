@@ -1,0 +1,67 @@
+{% comment %}
+  Product Card - 复用在首页 / 合集页 / 搜索结果页
+  输入：product 对象
+  规则：
+  1. 折扣产品必须同时展示 折扣价 + 划线原价（compare at price）
+  2. 只有一个变体时不显示变体标识（颜色圆点）
+{% endcomment %}
+<div class="product-card">
+  <a href="{{ product.url }}" class="product-card__media">
+    {% if product.compare_at_price > product.price %}
+      <span class="product-card__badge product-card__badge--sale">Save {{ product.compare_at_price | minus: product.price | times: 100 | divided_by: product.compare_at_price | round }}%</span>
+    {% elsif product.available == false %}
+      <span class="product-card__badge product-card__badge--soldout">Sold out</span>
+    {% endif %}
+    {% if product.featured_image %}
+      <img
+        src="{{ product.featured_image | image_url: width: 600 }}"
+        alt="{{ product.title | escape }}"
+        loading="lazy"
+      >
+    {% else %}
+      <div class="product-card__no-image">No image</div>
+    {% endif %}
+  </a>
+  <div class="product-card__info">
+    <h3 class="product-card__title">
+      <a href="{{ product.url }}">{{ product.title | escape }}</a>
+    </h3>
+    <div class="product-card__bottom">
+      {% comment %}
+        变体标识：只展示「有图片」的变体，用变体图片做圆形 swatch，最多 4 个 + N
+      {% endcomment %}
+      {% if product.variants.size > 1 %}
+        {%- assign swatch_total = 0 -%}
+        {%- for variant in product.variants -%}
+          {%- if variant.image -%}{%- assign swatch_total = swatch_total | plus: 1 -%}{%- endif -%}
+        {%- endfor -%}
+        {%- if swatch_total > 0 -%}
+          <div class="product-card__colors">
+            {%- assign swatch_shown = 0 -%}
+            {%- for variant in product.variants -%}
+              {%- if variant.image and swatch_shown < 4 -%}
+                <span
+                  class="product-card__color product-card__color--image"
+                  title="{{ variant.title | escape }}"
+                  style="background-image: url({{ variant.image | image_url: width: 60 }});"
+                ></span>
+                {%- assign swatch_shown = swatch_shown | plus: 1 -%}
+              {%- endif -%}
+            {%- endfor -%}
+            {%- if swatch_total > 4 -%}
+              <span class="product-card__color product-card__color--more">+{{ swatch_total | minus: 4 }}</span>
+            {%- endif -%}
+          </div>
+        {%- endif -%}
+      {% endif %}
+      <div class="product-card__price">
+        {% if product.compare_at_price > product.price %}
+          <span class="product-card__price--sale">{{ product.price | money }}</span>
+          <s class="product-card__price--original">{{ product.compare_at_price | money }}</s>
+        {% else %}
+          <span>{{ product.price | money }}</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>

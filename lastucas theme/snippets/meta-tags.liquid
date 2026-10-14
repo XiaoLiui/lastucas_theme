@@ -1,0 +1,8 @@
+{% comment %} 极简 SEO / Open Graph 标签，不搞 Dawn 那一套复杂的 {% endcomment %}
+<meta name="description" content="{{ page_description | default: shop.shipping_policy.body | default: shop.description | strip_html }}">
+<meta property="og:title" content="{{ page_title | default: shop.name }}">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ canonical_url }}">
+{% if page_image %}
+  <meta property="og:image" content="{{ page_image | image_url: width: 1200 }}">
+{% endif %}

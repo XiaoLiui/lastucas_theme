@@ -1,0 +1,89 @@
+{% comment %}
+  购物车页：两栏布局（商品列表 + 订单摘要）
+  - 行价格显示「行小计」，数量变化实时联动（theme.js）
+  - 底部挂载「You may also like」推荐（cart-recommendations section）
+{% endcomment %}
+<section class="cart-page">
+  <div class="container">
+    <div class="cart-page__title-row">
+      <h1 class="cart-page__title">Your Cart</h1>
+      {% if cart.item_count > 0 %}
+        <button type="button" class="cart-page__clear" data-cart-clear>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+          Clear cart
+        </button>
+      {% endif %}
+    </div>
+
+    {% if cart.item_count == 0 %}
+      <div class="cart-page__empty">
+        <p>Your cart is empty.</p>
+        <a href="{{ routes.all_products_collection_url }}" class="cart-page__continue-btn">Continue shopping</a>
+      </div>
+    {% else %}
+      <form action="{{ routes.cart_url }}" method="post" class="cart-page__form">
+        <div class="cart-page__layout">
+          <div class="cart-page__list">
+            {% for item in cart.items %}
+              <div
+                class="cart-line"
+                data-key="{{ item.key }}"
+                data-line="{{ forloop.index }}"
+                data-unit-price="{{ item.final_price }}"
+                data-line-price="{{ item.final_line_price }}"
+              >
+                <a class="cart-line__img" href="{{ item.url }}">
+                  {% if item.image %}
+                    <img src="{{ item.image | image_url: width: 220 }}" alt="{{ item.product.title | escape }}" loading="lazy">
+                  {% endif %}
+                </a>
+                <div class="cart-line__info">
+                  <a class="cart-line__title" href="{{ item.url }}">{{ item.product.title | escape }}</a>
+                  <button type="button" class="cart-line__remove" data-remove aria-label="Remove {{ item.product.title | escape }}">
+                    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+                  </button>
+                  {% if item.variant.title != 'Default Title' %}
+                    <div class="cart-line__variant">{{ item.variant.title | escape }}</div>
+                  {% endif %}
+                </div>
+                <div class="cart-line__qty">
+                  <button type="button" class="cart-line__qty-btn" data-qty-minus aria-label="Decrease quantity">−</button>
+                  <input
+                    type="number"
+                    name="updates[{{ item.key }}]"
+                    value="{{ item.quantity }}"
+                    min="0"
+                    class="cart-line__qty-input"
+                    data-qty-input
+                    aria-label="Quantity"
+                  >
+                  <button type="button" class="cart-line__qty-btn" data-qty-plus aria-label="Increase quantity">+</button>
+                </div>
+                <div class="cart-line__price" data-line-price>{{ item.final_line_price | money }}</div>
+              </div>
+            {% endfor %}
+          </div>
+
+          <aside class="cart-summary">
+            <h2 class="cart-summary__title">Order Summary</h2>
+            <div class="cart-summary__row">
+              <span>Subtotal</span>
+              <strong data-cart-page-subtotal>{{ cart.total_price | money }}</strong>
+            </div>
+            <p class="cart-summary__shipping">Free shipping on all orders.</p>
+            <p class="cart-summary__note">Shipping &amp; taxes calculated at checkout.</p>
+            <button type="submit" name="checkout" class="cart-summary__checkout">Check out</button>
+            <a class="cart-summary__continue" href="{{ routes.all_products_collection_url }}">Continue shopping</a>
+          </aside>
+        </div>
+      </form>
+    {% endif %}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Main Cart",
+  "settings": []
+}
+{% endschema %}

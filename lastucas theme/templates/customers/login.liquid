@@ -1,0 +1,37 @@
+{% comment %} 登录页 {% endcomment %}
+
+{% section 'announcement-bar' %}
+{% section 'header' %}
+
+<section class="auth-page">
+  <div class="container">
+    <div class="auth-page__box">
+      <h1 class="auth-page__title">Sign In</h1>
+
+      {% form 'customer_login' %}
+        {{ form.errors }}
+
+        <div class="auth-page__field">
+          <label for="CustomerEmail">Email</label>
+          <input type="email" id="CustomerEmail" name="customer[email]" autocorrect="off" autocapitalize="off" autofocus>
+        </div>
+
+        <div class="auth-page__field">
+          <label for="CustomerPassword">Password</label>
+          <input type="password" id="CustomerPassword" name="customer[password]">
+        </div>
+
+        <div class="auth-page__actions">
+          <a href="{{ routes.account_recover_password_url }}" class="auth-page__link">Forgot your password?</a>
+          <button type="submit" class="auth-page__submit">Sign In</button>
+        </div>
+      {% endform %}
+
+      <div class="auth-page__footer">
+        <p>New customer? <a href="{{ routes.account_register_url }}" class="auth-page__link">Create account</a></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% section 'footer' %}

@@ -1,0 +1,59 @@
+{% comment %}
+  Make Home CTA - MAKE YOUR HOME YOUR OWN
+  大标题 + 三个卖点 + 家庭场景图
+{% endcomment %}
+<section class="make-home">
+  <div class="container">
+    <h2 class="make-home__title">{{ section.settings.title | escape | newline_to_br }}</h2>
+    <div class="make-home__tags">
+      <span>{{ section.settings.tag_1 | escape }}</span>
+      <span class="make-home__sep">/</span>
+      <span>{{ section.settings.tag_2 | escape }}</span>
+      <span class="make-home__sep">/</span>
+      <span>{{ section.settings.tag_3 | escape }}</span>
+    </div>
+    <div class="make-home__media">
+      {% if section.settings.image != blank %}
+        <img src="{{ section.settings.image | image_url: width: 1200 }}" alt="Family reading at home" class="make-home__img">
+      {% else %}
+        <div class="make-home__img make-home__img--placeholder">Family reading scene</div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Make Home CTA",
+  "settings": [
+    {
+      "type": "textarea",
+      "id": "title",
+      "label": "Heading",
+      "default": "MAKE YOUR\nHOME YOUR OWN"
+    },
+    {
+      "type": "text",
+      "id": "tag_1",
+      "label": "Selling point 1",
+      "default": "Friendly Prices"
+    },
+    {
+      "type": "text",
+      "id": "tag_2",
+      "label": "Selling point 2",
+      "default": "Double Assurance"
+    },
+    {
+      "type": "text",
+      "id": "tag_3",
+      "label": "Selling point 3",
+      "default": "Lifetime Support"
+    },
+    { "type": "image_picker", "id": "image", "label": "Family scene image" }
+  ],
+  "presets": [
+    { "name": "Make Home CTA" }
+  ]
+}
+{% endschema %}

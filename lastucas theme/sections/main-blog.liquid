@@ -1,0 +1,53 @@
+{% comment %}
+  Blog List Page - 博客列表页
+  博客标题 + 文章卡片网格
+{% endcomment %}
+<section class="blog-page">
+  <div class="container">
+    <div class="blog-page__header">
+      <h1 class="blog-page__title">{{ blog.title | escape }}</h1>
+      <p class="blog-page__subtitle">Tips, ideas, and inspiration for your home</p>
+    </div>
+
+    <div class="blog-page__grid">
+      {% for article in blog.articles %}
+        <div class="blog-card">
+          <a href="{{ article.url }}" class="blog-card__media">
+            {% if article.image %}
+              <img src="{{ article.image | image_url: width: 800 }}" alt="{{ article.title | escape }}" loading="lazy">
+            {% else %}
+              <img src="{{ 'hero-default.jpg' | asset_url }}" alt="Blog">
+            {% endif %}
+          </a>
+          <div class="blog-card__info">
+            <div class="blog-card__date">{{ article.published_at | date: "%B %d, %Y" }}</div>
+            <h3 class="blog-card__title">
+              <a href="{{ article.url }}">{{ article.title | escape }}</a>
+            </h3>
+            <p class="blog-card__excerpt">{{ article.excerpt | strip_html | truncate: 120 }}</p>
+            <a href="{{ article.url }}" class="blog-card__btn">Read More</a>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    {% if paginate.pages > 1 %}
+      <div class="collection-grid__pagination">
+        {% if paginate.previous %}
+          <a href="{{ paginate.previous.url }}">‹</a>
+        {% endif %}
+        <span>{{ paginate.current_page }} / {{ paginate.pages }}</span>
+        {% if paginate.next %}
+          <a href="{{ paginate.next.url }}">›</a>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Main Blog",
+  "settings": []
+}
+{% endschema %}

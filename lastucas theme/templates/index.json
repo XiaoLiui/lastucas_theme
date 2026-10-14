@@ -1,0 +1,70 @@
+{
+  "sections": {
+    "hero": {
+      "type": "hero",
+      "blocks": {
+        "slide_1": {
+          "type": "slide",
+          "settings": {
+            "title": "SLEEK, MODERN DESIGNS FOR EVERY ROOM",
+            "button_label": "Shop Now",
+            "text_color": "#8a7a66"
+          }
+        },
+        "slide_2": {
+          "type": "slide",
+          "settings": {
+            "title": "COMFORT IN EVERY GLOW",
+            "button_label": "Explore Lamps",
+            "text_color": "#FFFFFF"
+          }
+        }
+      },
+      "block_order": ["slide_1", "slide_2"],
+      "settings": {}
+    },
+    "featured": {
+      "type": "featured-products",
+      "settings": {
+        "heading": "What's Popular Now",
+        "limit": 4
+      }
+    },
+    "immersive": {
+      "type": "immersive-showcase",
+      "settings": {}
+    },
+    "why": {
+      "type": "features",
+      "blocks": {
+        "f1": { "type": "feature", "settings": { "icon": "lamp", "title": "Free Product Trials" } },
+        "f2": { "type": "feature", "settings": { "icon": "truck", "title": "2-4 Days Fast Delivery" } },
+        "f3": { "type": "feature", "settings": { "icon": "star", "title": "4+Star Rating" } },
+        "f4": { "type": "feature", "settings": { "icon": "shield", "title": "12-Month Extended Warranty" } },
+        "f5": { "type": "feature", "settings": { "icon": "return", "title": "60 Days Return" } },
+        "f6": { "type": "feature", "settings": { "icon": "bulb", "title": "Pre-Test Program" } }
+      },
+      "block_order": ["f1", "f2", "f3", "f4", "f5", "f6"],
+      "settings": {}
+    },
+    "testimonials": {
+      "type": "testimonials",
+      "blocks": {
+        "r1": { "type": "testimonial", "settings": { "quote": "I purchased this lamp and sat it aside. I finally decided to put it together. It's very easy to assemble. The remote control is heaven.", "author": "Emily Johnson", "date": "August 2, 2024" } },
+        "r2": { "type": "testimonial", "settings": { "quote": "After a fairly easy assembly, I was amazed by the different light tones for various situations.", "author": "James Smith", "date": "November 28, 2023" } },
+        "r3": { "type": "testimonial", "settings": { "quote": "Great look plus a charging area. Love the lighting options.", "author": "Sophia Williams", "date": "November 18, 2022" } }
+      },
+      "block_order": ["r1", "r2", "r3"],
+      "settings": {}
+    },
+    "blog": {
+      "type": "blog-preview",
+      "settings": {}
+    },
+    "makehome": {
+      "type": "make-home",
+      "settings": {}
+    }
+  },
+  "order": ["hero", "featured", "immersive", "why", "testimonials", "blog", "makehome"]
+}

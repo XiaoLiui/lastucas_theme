@@ -1,0 +1,127 @@
+{% comment %}
+  使用场景切换模块（Usage Scenes）
+  - 数据来源：产品元字段 product.metafields.custom.usage_scenes（Metaobject 列表）
+  - 每个场景 Metaobject 含字段：name（单行文本）/ image（文件）/ description（富文本）
+  - 前台：场景 tab 按钮 + 点击切换图片/文案
+{% endcomment %}
+
+{%- liquid
+  # 优先读产品 metafield（custom.usage_scenes，可按产品差异化）
+  assign scenes = product.metafields.custom.usage_scenes.value
+  # 兜底：产品未配置时读全局场景库（Metaobject type = usage_scene）
+  if scenes == blank or scenes.size == 0
+    assign scenes = shop.metaobjects.usage_scene.values
+  endif
+-%}
+
+{% if scenes and scenes.size > 0 %}
+<section class="usage-scenes" data-usage-scenes>
+  <div class="container">
+    {% if section.settings.heading != blank %}
+      <h2 class="usage-scenes__heading">{{ section.settings.heading | escape }}</h2>
+    {% endif %}
+
+    <div class="usage-scenes__tabs" role="tablist" aria-label="Usage scenes">
+      {% for scene in scenes %}
+        <button
+          type="button"
+          class="usage-scenes__tab {% if forloop.first %}is-active{% endif %}"
+          role="tab"
+          aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
+          data-scene-tab="{{ forloop.index0 }}"
+        >{{ scene.name.value | escape }}</button>
+      {% endfor %}
+    </div>
+
+    <div class="usage-scenes__stage">
+      <button type="button" class="usage-scenes__arrow usage-scenes__arrow--prev" data-scene-prev aria-label="Previous scene">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <button type="button" class="usage-scenes__arrow usage-scenes__arrow--next" data-scene-next aria-label="Next scene">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+
+      <div class="usage-scenes__panels">
+        {% for scene in scenes %}
+          {%- assign scene_img = scene.image.value -%}
+          <div
+            class="usage-scenes__panel {% if forloop.first %}is-active{% endif %}"
+            role="tabpanel"
+            data-scene-panel="{{ forloop.index0 }}"
+          >
+            {% if scene_img != blank %}
+              <div class="usage-scenes__media">
+                <img
+                  src="{{ scene_img | image_url: width: 1600 }}"
+                  alt="{{ scene.name.value | escape }}"
+                  loading="lazy"
+                  width="1600"
+                  height="1000"
+                >
+              </div>
+            {% endif %}
+            {% if scene.description.value != blank %}
+              <div class="usage-scenes__desc">{{ scene.description.value }}</div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  (function () {
+    'use strict';
+    var root = document.querySelector('[data-usage-scenes]');
+    if (!root) return;
+    var tabs = root.querySelectorAll('[data-scene-tab]');
+    var panels = root.querySelectorAll('[data-scene-panel]');
+    var prev = root.querySelector('[data-scene-prev]');
+    var next = root.querySelector('[data-scene-next]');
+    var total = panels.length;
+    var current = 0;
+
+    function activate(idx) {
+      if (idx < 0) idx = total - 1;
+      if (idx >= total) idx = 0;
+      current = idx;
+      tabs.forEach(function (t) {
+        var active = t.getAttribute('data-scene-tab') == String(idx);
+        t.classList.toggle('is-active', active);
+        t.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      panels.forEach(function (p) {
+        p.classList.toggle('is-active', p.getAttribute('data-scene-panel') == String(idx));
+      });
+    }
+
+    tabs.forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        activate(Number(tab.getAttribute('data-scene-tab')));
+      });
+    });
+    if (prev) prev.addEventListener('click', function () { activate(current - 1); });
+    if (next) next.addEventListener('click', function () { activate(current + 1); });
+  })();
+</script>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Usage Scenes",
+  "tag": "section",
+  "class": "section-usage-scenes",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "标题",
+      "default": "Designed for every space"
+    }
+  ],
+  "presets": [
+    { "name": "Usage Scenes" }
+  ]
+}
+{% endschema %}

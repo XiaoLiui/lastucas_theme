@@ -1,0 +1,38 @@
+{% comment %}
+  Article Detail Page - 文章详情页
+  标题 + 日期 + 封面图 + 正文
+{% endcomment %}
+<section class="article-page">
+  <div class="container">
+    <div class="article-page__header">
+      <h1 class="article-page__title">{{ article.title | escape }}</h1>
+      <div class="article-page__meta">
+        <span class="article-page__date">{{ article.published_at | date: "%B %d, %Y" }}</span>
+        {% if article.author %}
+          <span class="article-page__author">by {{ article.author }}</span>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if article.image %}
+      <div class="article-page__image">
+        <img src="{{ article.image | image_url: width: 1200 }}" alt="{{ article.title | escape }}">
+      </div>
+    {% endif %}
+
+    <div class="article-page__content">
+      {{ article.content }}
+    </div>
+
+    <div class="article-page__footer">
+      <a href="{{ blog.url }}" class="article-page__back">← Back to Blog</a>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Main Article",
+  "settings": []
+}
+{% endschema %}

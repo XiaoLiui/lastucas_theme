@@ -1,0 +1,57 @@
+{% comment %}
+  Search Page - 搜索结果页
+  顶部搜索框 + 产品结果列表
+{% endcomment %}
+<section class="search-page">
+  <div class="container">
+
+    {% comment %} 搜索标题 {% endcomment %}
+    <div class="search-page__header">
+      <h1 class="search-page__title">Search</h1>
+      <form action="{{ routes.search_url }}" method="get" class="search-page__form">
+        <input type="text" name="q" value="{{ search.terms | escape }}" placeholder="Search products..." class="search-page__input">
+        <button type="submit" class="search-page__btn">Search</button>
+      </form>
+    </div>
+
+    {% comment %} 搜索结果 {% endcomment %}
+    {% if search.terms != blank %}
+      <p class="search-page__count">{{ search.results_count }} results for "{{ search.terms | escape }}"</p>
+
+      {% if search.results_count > 0 %}
+        <div class="search-page__grid">
+          {% for item in search.results %}
+            {% if item.object_type == 'product' %}
+              {% render 'product-card', product: item %}
+            {% endif %}
+          {% endfor %}
+        </div>
+
+        {% if search.results.pages > 1 %}
+          <div class="collection-grid__pagination">
+            {% if search.results.previous %}
+              <a href="{{ search.results.previous.url }}">‹</a>
+            {% endif %}
+            <span>{{ search.results.current_page }} / {{ search.results.pages }}</span>
+            {% if search.results.next %}
+              <a href="{{ search.results.next.url }}">›</a>
+            {% endif %}
+          </div>
+        {% endif %}
+
+      {% else %}
+        <p class="search-page__empty">No results found. Try a different search term.</p>
+      {% endif %}
+    {% else %}
+      <p class="search-page__empty">Start typing to search products.</p>
+    {% endif %}
+
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Main Search",
+  "settings": []
+}
+{% endschema %}

@@ -1,0 +1,340 @@
+{% comment %}
+  Main Product - 产品详情页（已联动后端数据）
+  左：图片画廊（主图 + 缩略图，读取 product.media）
+  右：标题 / 评分 / 价格 / 变体选择 / 数量 / Add to cart / Buy Now / 描述 / 支付 / 技术细节
+  变体切换通过前端 JS 联动：价格、划线价、SKU、加购 variant id、变体图、可用性
+{% endcomment %}
+
+{%- assign selected_variant = product.selected_or_first_available_variant -%}
+
+<section class="product-page">
+  <div class="container">
+    <div class="product-page__grid">
+
+      {% comment %} ============ 左：图片画廊（缩略图竖排在左 + 主图滑动轨道 + 放大预览） ============ {% endcomment %}
+      <div class="product-page__media" data-gallery>
+        {% if product.media.size > 0 %}
+          {% comment %} 缩略图列（左，超高虚化隐藏 + 随切换滚动） {% endcomment %}
+          <div class="product-page__thumbs-col" data-thumbs-col>
+            <div class="product-page__thumbs" data-thumbs>
+              {% for media in product.media %}
+                <button type="button"
+                        class="product-page__thumb{% if forloop.first %} is-active{% endif %}"
+                        data-thumb-index="{{ forloop.index0 }}"
+                        aria-label="View image {{ forloop.index }}">
+                  <img src="{{ media.preview_image | image_url: width: 120 }}"
+                       alt="{{ product.title | escape }}"
+                       loading="lazy">
+                </button>
+              {% endfor %}
+            </div>
+          </div>
+
+          {% comment %} 主图区（右，滑动轨道 + 左右箭头 + 放大提示） {% endcomment %}
+          <div class="product-page__image-main" data-main-image>
+            <div class="product-page__gallery-track" data-gallery-track>
+              {% for media in product.media %}
+                <div class="product-page__gallery-slide" data-gallery-index="{{ forloop.index0 }}">
+                  <img src="{{ media.preview_image | image_url: width: 900 }}"
+                       data-src="{{ media.preview_image | image_url: width: 900 }}"
+                       data-zoom="{{ media.preview_image | image_url: width: 1800 }}"
+                       alt="{{ product.title | escape }}"
+                       loading="{% if forloop.first %}eager{% else %}lazy{% endif %}">
+                </div>
+              {% endfor %}
+            </div>
+
+            {% if product.media.size > 1 %}
+              <button type="button" class="product-page__arrow product-page__arrow--prev" data-gallery-prev aria-label="Previous image">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <button type="button" class="product-page__arrow product-page__arrow--next" data-gallery-next aria-label="Next image">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
+              </button>
+            {% endif %}
+
+            <button type="button" class="product-page__zoom-btn" data-zoom-open aria-label="Zoom image">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+            </button>
+          </div>
+        {% else %}
+          <div class="product-page__image-main product-page__image-main--single" data-main-image>
+            <img src="{{ 'hero-default.jpg' | asset_url }}" alt="{{ product.title | escape }}" class="product-page__gallery-img is-active">
+          </div>
+        {% endif %}
+      </div>
+
+      {% comment %} ============ 右：产品信息 ============ {% endcomment %}
+      <div class="product-page__info">
+
+        <h1 class="product-page__title">{{ product.title | escape }}</h1>
+
+        {% comment %} 价格：联动选中变体 {% endcomment %}
+        <div class="product-page__price-row">
+          <span class="product-page__price" data-price>{{ selected_variant.price | money }}</span>
+          {% if selected_variant.compare_at_price > selected_variant.price %}
+            <s class="product-page__price--original" data-compare-price>{{ selected_variant.compare_at_price | money }}</s>
+            <span class="product-page__save-badge" data-save-badge>Save {{ selected_variant.compare_at_price | minus: selected_variant.price | times: 100 | divided_by: selected_variant.compare_at_price | round }}%</span>
+          {% else %}
+            <s class="product-page__price--original" data-compare-price hidden></s>
+            <span class="product-page__save-badge" data-save-badge hidden></span>
+          {% endif %}
+        </div>
+
+        {% comment %} 变体选择：颜色用 swatch，其余用按钮；点击真正联动价格/图片/SKU {% endcomment %}
+        {% unless product.has_only_default_variant %}
+          {% for option in product.options_with_values %}
+            {% assign option_index = forloop.index0 %}
+            {% assign option_lower = option.name | downcase %}
+            {% assign is_color = false %}
+            {% if option_lower contains 'color' or option_lower contains 'colour' %}
+              {% assign is_color = true %}
+            {% endif %}
+
+            <div class="product-page__variant">
+              <label class="product-page__variant-label">
+                {{ option.name }}: <span data-option-value="{{ option_index }}">{{ option.selected_value | escape }}</span>
+              </label>
+              <div class="product-page__option-values">
+                {% for value in option.values %}
+                  {% comment %} 查找该选项值对应的变体图片（Amazon 风格图片 swatch）{% endcomment %}
+                  {% assign value_img = '' %}
+                  {% for v in product.variants %}
+                    {% if value_img == '' and v.featured_image and v.options[option_index] == value %}
+                      {% assign value_img = v.featured_image | image_url: width: 96 %}
+                    {% endif %}
+                  {% endfor %}
+
+                  <button type="button"
+                          class="product-page__option-btn{% if value_img != '' %} product-page__option-btn--img{% elsif is_color %} product-page__option-btn--swatch{% endif %}{% if value == option.selected_value %} is-active{% endif %}"
+                          data-option-index="{{ option_index }}"
+                          data-value="{{ value | escape }}"
+                          {% if value_img != '' %}title="{{ value | escape }}"{% endif %}>
+                    {% if value_img != '' %}
+                      <span class="product-page__swatch-img"><img src="{{ value_img }}" alt="{{ value | escape }}" loading="lazy"></span>
+                    {% elsif is_color %}
+                      <span class="product-page__swatch-dot" data-swatch-dot="{{ value | downcase | escape }}" style="background-color:#ddd;"></span>
+                      <span>{{ value | escape }}</span>
+                    {% else %}
+                      <span>{{ value | escape }}</span>
+                    {% endif %}
+                  </button>
+                {% endfor %}
+              </div>
+            </div>
+          {% endfor %}
+        {% endunless %}
+
+        {% comment %} 数量 + 加购表单 {% endcomment %}
+        {% form 'product', product, data-product-form: '' %}
+          <input type="hidden" name="id" value="{{ selected_variant.id }}" data-variant-id>
+
+          <div class="product-page__quantity">
+            <label class="product-page__variant-label">Quantity:</label>
+            <div class="product-page__qty-control">
+              <button type="button" class="product-page__qty-btn" data-qty-minus>−</button>
+              <input type="number" name="quantity" value="1" min="1" class="product-page__qty-input" data-qty-input>
+              <button type="button" class="product-page__qty-btn" data-qty-plus>+</button>
+            </div>
+          </div>
+
+          <div class="product-page__actions">
+            <button type="submit" name="add" class="product-page__add-btn" data-add-to-cart
+                    {% unless selected_variant.available %}disabled{% endunless %}>
+              {% if selected_variant.available %}Add to cart{% else %}Sold out{% endif %}
+            </button>
+            <button type="button" class="product-page__buy-btn" data-buy-now
+                    {% unless selected_variant.available %}disabled{% endunless %}>
+              Buy Now
+            </button>
+          </div>
+        {% endform %}
+
+        {% comment %} 信任保障模块（Buy Now 下方）：安全支付说明 + 官方质保 + 4 项服务保障 {% endcomment %}
+        <div class="product-page__trust">
+          {% if section.settings.trust_note != blank %}
+            <p class="product-page__trust-note">{{ section.settings.trust_note | escape }}</p>
+          {% endif %}
+
+          {% if section.settings.trust_hero != blank %}
+            <div class="product-page__trust-hero">
+              <span class="product-page__trust-icon">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 1.8l8.2 3.4v5.6c0 5.2-3.5 10-8.2 11.7C7.3 20.8 3.8 16 3.8 10.8V5.2L12 1.8z"/><path d="M10.5 15.2l-3.2-3.2 1.5-1.5 1.7 1.7 4.7-4.7 1.5 1.5-6.2 6.2z" fill="#f5f4f1"/></svg>
+              </span>
+              <span>{{ section.settings.trust_hero | escape }}</span>
+            </div>
+          {% endif %}
+
+          <div class="product-page__trust-grid">
+            {% if section.settings.trust_card1 != blank %}
+              <div class="product-page__trust-card">
+                <span class="product-page__trust-icon">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h11v8H3z"/><path d="M14 11h4l3 3v3h-7"/><circle cx="7" cy="18.5" r="1.6"/><circle cx="17.5" cy="18.5" r="1.6"/><path d="M6 6l2-2m0 0l2 2M8 4v5"/></svg>
+                </span>
+                <span>{{ section.settings.trust_card1 | escape }}</span>
+              </div>
+            {% endif %}
+            {% if section.settings.trust_card2 != blank %}
+              <div class="product-page__trust-card">
+                <span class="product-page__trust-icon">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7h12v10H2z"/><path d="M14 10h4l3 3v4h-7"/><circle cx="6.5" cy="18.5" r="1.6"/><circle cx="17" cy="18.5" r="1.6"/></svg>
+                </span>
+                <span>{{ section.settings.trust_card2 | escape }}</span>
+              </div>
+            {% endif %}
+            {% if section.settings.trust_card3 != blank %}
+              <div class="product-page__trust-card">
+                <span class="product-page__trust-icon">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6-5.2-6-10a6 6 0 1 1 12 0c0 4.8-6 10-6 10z"/><circle cx="12" cy="11" r="2.4"/></svg>
+                </span>
+                <span>{{ section.settings.trust_card3 | escape }}</span>
+              </div>
+            {% endif %}
+            {% if section.settings.trust_card4 != blank %}
+              <div class="product-page__trust-card">
+                <span class="product-page__trust-icon">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.4-3 8.4-7 10-4-1.6-7-5.6-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>
+                </span>
+                <span>{{ section.settings.trust_card4 | escape }}</span>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        {% comment %} 支付方式（信任保障卡下方，真实品牌图标） {% endcomment %}
+        <div class="product-page__payment">
+          <p class="product-page__payment-label">Easy and secure payment:</p>
+          <div class="product-page__payment-icons">
+            <span class="pay-icon" title="Google Pay" aria-label="Google Pay">
+              <svg viewBox="0 0 48 30" role="img"><rect width="48" height="30" rx="4" fill="#fff"/><text x="24" y="19.5" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="500" fill="#5f6368"><tspan fill="#4285F4">G</tspan><tspan dx="2">Pay</tspan></text></svg>
+            </span>
+            <span class="pay-icon" title="Apple Pay" aria-label="Apple Pay">
+              <svg viewBox="0 0 48 30" role="img"><rect width="48" height="30" rx="4" fill="#fff"/><g transform="translate(9,8) scale(0.028)"><path fill="#000" d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.7-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></g><text x="31" y="19.5" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="600" fill="#000">Pay</text></svg>
+            </span>
+            <span class="pay-icon" title="Shop Pay" aria-label="Shop Pay">
+              <svg viewBox="0 0 48 30" role="img"><rect width="48" height="30" rx="4" fill="#5A31F4"/><text x="24" y="19.5" text-anchor="middle" font-family="Arial, sans-serif" font-size="10.5" font-weight="700" fill="#fff">shop<tspan font-weight="400">Pay</tspan></text></svg>
+            </span>
+            <span class="pay-icon" title="Visa" aria-label="Visa">
+              <svg viewBox="0 0 48 30" role="img"><rect width="48" height="30" rx="4" fill="#fff"/><text x="24" y="20" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="800" font-style="italic" fill="#1A1F71">VISA</text></svg>
+            </span>
+            <span class="pay-icon" title="Mastercard" aria-label="Mastercard">
+              <svg viewBox="0 0 48 30" role="img"><rect width="48" height="30" rx="4" fill="#fff"/><circle cx="20" cy="15" r="8" fill="#EB001B"/><circle cx="28" cy="15" r="8" fill="#F79E1B" fill-opacity="0.9"/><path d="M24 8.6a8 8 0 0 1 0 12.8 8 8 0 0 1 0-12.8z" fill="#FF5F00"/></svg>
+            </span>
+            <span class="pay-icon" title="American Express" aria-label="American Express">
+              <svg viewBox="0 0 48 30" role="img"><rect width="48" height="30" rx="4" fill="#2E77BC"/><text x="24" y="19.5" text-anchor="middle" font-family="Arial, sans-serif" font-size="9.5" font-weight="800" fill="#fff">AMEX</text></svg>
+            </span>
+            <span class="pay-icon" title="PayPal" aria-label="PayPal">
+              <svg viewBox="0 0 48 30" role="img"><rect width="48" height="30" rx="4" fill="#fff"/><text x="24" y="19.5" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="800" font-style="italic"><tspan fill="#003087">Pay</tspan><tspan fill="#009CDE">Pal</tspan></text></svg>
+            </span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    {% comment %} 下方全宽：技术细节 + 描述（类似亚马逊 A+，横跨整页，非左右分栏） {% endcomment %}
+    <div class="product-page__lower">
+      <details class="product-page__details" open>
+        <summary class="product-page__details-summary">TECHNICAL DETAILS</summary>
+        <div class="product-page__specs">
+          {% if selected_variant.sku != blank %}
+            <span class="product-page__spec-label">MODEL</span>
+            <span class="product-page__spec-value" data-sku>{{ selected_variant.sku }}</span>
+          {% endif %}
+          {% if product.vendor != blank %}
+            <span class="product-page__spec-label">BRAND</span>
+            <span class="product-page__spec-value">{{ product.vendor | escape }}</span>
+          {% endif %}
+          {% if product.type != blank %}
+            <span class="product-page__spec-label">TYPE</span>
+            <span class="product-page__spec-value">{{ product.type | escape }}</span>
+          {% endif %}
+          {% if product.metafields.custom.specifications != blank %}
+            {% assign specs = product.metafields.custom.specifications.value %}
+            {% for spec in specs %}
+              <span class="product-page__spec-label">{{ spec[0] | upcase | escape }}</span>
+              <span class="product-page__spec-value">{{ spec[1] | escape }}</span>
+            {% endfor %}
+          {% endif %}
+        </div>
+      </details>
+
+      {% comment %} 描述 {% endcomment %}
+      {% if product.description != blank %}
+        <div class="product-page__description">{{ product.description }}</div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% comment %} 变体数据（供前端联动价格/SKU/可用性）{% endcomment %}
+  <script type="application/json" data-product-variants>
+    {{ product.variants | json }}
+  </script>
+
+  {% comment %} 变体图片映射（变体 id -> 图片 URL，供切换图片用）{% endcomment %}
+  <script type="application/json" data-variant-images>
+    {
+      {% for variant in product.variants %}
+        "{{ variant.id }}": "{% if variant.featured_image %}{{ variant.featured_image | image_url: width: 900 }}{% else %}{{ product.featured_image | image_url: width: 900 }}{% endif %}"{% unless forloop.last %},{% endunless %}
+      {% endfor %}
+    }
+  </script>
+
+  {% comment %} 放大预览 lightbox（默认隐藏，点击产品图才打开） {% endcomment %}
+  <div class="product-page__lightbox" data-lightbox aria-hidden="true" hidden>
+    <button type="button" class="product-page__lightbox-close" data-lightbox-close aria-label="Close">
+      <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <button type="button" class="product-page__lightbox-arrow product-page__lightbox-arrow--prev" data-lightbox-prev aria-label="Previous image">
+      <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <img src="" alt="{{ product.title | escape }}" class="product-page__lightbox-img" data-lightbox-img>
+    <button type="button" class="product-page__lightbox-arrow product-page__lightbox-arrow--next" data-lightbox-next aria-label="Next image">
+      <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
+    </button>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Main Product",
+  "settings": [
+    {
+      "type": "textarea",
+      "id": "trust_note",
+      "label": "安全支付说明文字",
+      "default": "Pay securely today with PayPal, Klarna and major cards. Flexible options shown at checkout."
+    },
+    {
+      "type": "textarea",
+      "id": "trust_hero",
+      "label": "官方保障条文案",
+      "default": "Official LASTUCAS.com coverage includes a 2-year warranty when you order directly."
+    },
+    {
+      "type": "text",
+      "id": "trust_card1",
+      "label": "保障卡 1",
+      "default": "30-Day Easy Returns"
+    },
+    {
+      "type": "text",
+      "id": "trust_card2",
+      "label": "保障卡 2",
+      "default": "Fast & Free Shipping"
+    },
+    {
+      "type": "text",
+      "id": "trust_card3",
+      "label": "保障卡 3",
+      "default": "Ships from U.S. Warehouse"
+    },
+    {
+      "type": "text",
+      "id": "trust_card4",
+      "label": "保障卡 4",
+      "default": "2-Year Warranty"
+    }
+  ]
+}
+{% endschema %}

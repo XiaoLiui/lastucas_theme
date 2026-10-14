@@ -1,0 +1,71 @@
+{% comment %}
+  Featured Products - 首页产品推荐区
+  在 Customizer 里选一个 collection，自动输出产品卡片
+{% endcomment %}
+<section class="featured-products">
+  <div class="container">
+    <div class="featured-products__header">
+      <h2 class="featured-products__title">{{ section.settings.heading | escape }}</h2>
+    </div>
+    <div class="featured-products__divider"></div>
+
+    <div class="featured-products__grid">
+      {% assign collection = collections[section.settings.collection] %}
+      {% if collection != blank and collection.products.size > 0 %}
+        {% for product in collection.products limit: section.settings.limit %}
+          {% render 'product-card', product: product %}
+        {% endfor %}
+      {% else %}
+        {% assign badges = "sale|sale|soldout" | split: "|" %}
+        {% assign titles = "Wood Floor Lamp with Table & Charging Station|Floor Lamp with Table & 2 Drawers for Living Room|Dimmable Modern tree floor lamp with 3 LED Bulbs" | split: "|" %}
+        {% assign prices = "$91.99|$80.99|$79.99" | split: "|" %}
+        {% assign originals = "$109.99|$129.99|$99.99" | split: "|" %}
+        {% assign product_urls = "/products/wood-floor-lamp-with-table-charging-station|/products/floor-lamp-with-table-2-drawers|/products/dimmable-modern-tree-floor-lamp" | split: "|" %}
+        {% for i in (0..2) %}
+          <a href="{{ product_urls[i] }}" class="product-card">
+            <div class="product-card__media">
+              <span class="product-card__badge product-card__badge--{{ badges[i] }}">
+                {% if badges[i] == "sale" %}Save 16%{% else %}Sold out{% endif %}
+              </span>
+              <img src="{{ 'hero-default.jpg' | asset_url }}" alt="Product">
+            </div>
+            <div class="product-card__info">
+              <h3 class="product-card__title">{{ titles[i] }}</h3>
+              <div class="product-card__bottom">
+                <div class="product-card__colors">
+                  <span class="product-card__color" style="background:#8b1a1a"></span>
+                  <span class="product-card__color" style="background:#b83232"></span>
+                  <span class="product-card__color" style="background:#ddd"></span>
+                </div>
+                <div class="product-card__price">
+                  <span class="product-card__price--sale">{{ prices[i] }}</span>
+                  <s class="product-card__price--original">{{ originals[i] }}</s>
+                </div>
+              </div>
+            </div>
+          </a>
+        {% endfor %}
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Featured Products",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Heading", "default": "What's Popular Now" },
+    { "type": "collection", "id": "collection", "label": "Collection" },
+    {
+      "type": "range",
+      "id": "limit",
+      "label": "Products to show",
+      "min": 4, "max": 12, "step": 1,
+      "default": 4
+    }
+  ],
+  "presets": [
+    { "name": "Featured Products" }
+  ]
+}
+{% endschema %}

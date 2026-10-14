@@ -1,0 +1,17 @@
+{
+  "sections": {
+    "main": {
+      "type": "main-cart"
+    },
+    "recommendations": {
+      "type": "cart-recommendations",
+      "settings": {
+        "heading": "You may also like",
+        "link_text": "Shop All Lighting",
+        "link_url": "/collections/all",
+        "products_to_show": 8
+      }
+    }
+  },
+  "order": ["main", "recommendations"]
+}

@@ -1,0 +1,109 @@
+{% comment %}
+  Blog Preview - Inspiration for your home
+  布局：左文章列表（可点击切换）/ 右文章摘要面板
+{% endcomment %}
+<section class="blog-preview">
+  <div class="container">
+    <div class="blog-preview__header">
+      <h2 class="blog-preview__title">{{ section.settings.title | escape }}</h2>
+      <p class="blog-preview__subtitle">{{ section.settings.subtitle | escape }}</p>
+    </div>
+
+    <div class="blog-preview__layout">
+      {% assign blog = blogs[section.settings.blog] %}
+      {% assign has_articles = false %}
+      {% if blog and blog.articles.size > 0 %}
+        {% assign has_articles = true %}
+      {% endif %}
+
+      {% comment %} 左列：文章列表 {% endcomment %}
+      <div class="blog-preview__list" data-article-list>
+        {% if has_articles %}
+          {% for article in blog.articles limit: 3 %}
+            <button type="button"
+                    class="blog-preview__item {% if forloop.first %}is-active{% endif %}"
+                    data-article-tab="{{ forloop.index0 }}">
+              <span class="blog-preview__item-title">{{ article.title | escape }}</span>
+              <span class="blog-preview__item-arrow">›</span>
+            </button>
+          {% endfor %}
+        {% else %}
+          <button type="button" class="blog-preview__item is-active" data-article-tab="0">
+            <span class="blog-preview__item-title">10 Creative Ways to Use Floor Lamps to Transform Your Space</span>
+            <span class="blog-preview__item-arrow">›</span>
+          </button>
+          <button type="button" class="blog-preview__item" data-article-tab="1">
+            <span class="blog-preview__item-title">Where to Place Table Lamps in Living Room: An Ultimate Guide</span>
+            <span class="blog-preview__item-arrow">›</span>
+          </button>
+          <button type="button" class="blog-preview__item" data-article-tab="2">
+            <span class="blog-preview__item-title">How to Install a Dimmer Switch on a Floor Lamp: Ultimate Guide</span>
+            <span class="blog-preview__item-arrow">›</span>
+          </button>
+        {% endif %}
+      </div>
+
+      {% comment %} 右列：文章内容面板 {% endcomment %}
+      <div class="blog-preview__panel">
+        {% if has_articles %}
+          {% for article in blog.articles limit: 3 %}
+            <div class="blog-preview__content {% if forloop.first %}is-active{% endif %}"
+                 data-article-panel="{{ forloop.index0 }}">
+              {% if article.excerpt %}
+                {{ article.excerpt }}
+              {% else %}
+                {{ article.content | truncate: 300 }}
+              {% endif %}
+              <a href="{{ article.url }}" class="blog-preview__readmore">Read more &gt;&gt;</a>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="blog-preview__content is-active" data-article-panel="0">
+            <p>Discover ten creative ways to use floor lamps to completely transform your living space. From cozy reading corners to ambient lighting that makes a room feel larger, floor lamps are one of the most versatile pieces in your home.</p>
+            <a href="#" class="blog-preview__readmore">Read more &gt;&gt;</a>
+          </div>
+          <div class="blog-preview__content" data-article-panel="1">
+            <p>Not sure where to place a table lamp in your living room? This ultimate guide walks you through the best spots for balanced, beautiful light — side tables, shelves, and unexpected corners that come alive with the right lamp.</p>
+            <a href="#" class="blog-preview__readmore">Read more &gt;&gt;</a>
+          </div>
+          <div class="blog-preview__content" data-article-panel="2">
+            <p>Installing a dimmer switch for your floor lamp is easier than you think. Follow this step-by-step guide to add adjustable lighting, set the perfect mood, and enjoy full control over brightness in any room.</p>
+            <a href="#" class="blog-preview__readmore">Read more &gt;&gt;</a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <p class="blog-preview__footer-note">{{ section.settings.footer_note | escape }}</p>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Blog Preview",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Heading",
+      "default": "Inspiration"
+    },
+    {
+      "type": "text",
+      "id": "subtitle",
+      "label": "Subheading",
+      "default": "Ideas and guides for your home."
+    },
+    { "type": "blog", "id": "blog", "label": "Blog" },
+    {
+      "type": "text",
+      "id": "footer_note",
+      "label": "Footer note",
+      "default": "Visit our blog for more articles, guides and home inspiration."
+    }
+  ],
+  "presets": [
+    { "name": "Blog Preview" }
+  ]
+}
+{% endschema %}

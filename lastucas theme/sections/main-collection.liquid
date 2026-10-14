@@ -1,0 +1,74 @@
+{% comment %} 合集页 - 产品列表 {% endcomment %}
+
+{% comment %} 1. 顶部 Hero 横幅 {% endcomment %}
+<section class="collection-hero">
+  {% if collection.featured_image %}
+    <img src="{{ collection.featured_image | image_url: width: 1920 }}" alt="{{ collection.title | escape }}" class="collection-hero__bg">
+  {% else %}
+    <img src="{{ 'hero-default.jpg' | asset_url }}" alt="{{ collection.title | escape }}" class="collection-hero__bg">
+  {% endif %}
+  <div class="collection-hero__overlay"></div>
+  <h1 class="collection-hero__title">{{ collection.title | escape }}</h1>
+</section>
+
+{% comment %} 2. 工具栏：排序 + 搜索 + 分页 {% endcomment %}
+<section class="collection-toolbar container">
+  <div class="collection-toolbar__left">
+    <label class="collection-toolbar__label">Sort By:</label>
+    <select class="collection-toolbar__select" onchange="window.location.href=this.value">
+      <option value="?sort=manual" {% if sort_by == 'manual' %}selected{% endif %}>Featured</option>
+      <option value="?sort=price-ascending" {% if sort_by == 'price-ascending' %}selected{% endif %}>Price: Low to High</option>
+      <option value="?sort=price-descending" {% if sort_by == 'price-descending' %}selected{% endif %}>Price: High to Low</option>
+      <option value="?sort=title-ascending" {% if sort_by == 'title-ascending' %}selected{% endif %}>Name: A-Z</option>
+      <option value="?sort=created-descending" {% if sort_by == 'created-descending' %}selected{% endif %}>Newest</option>
+    </select>
+  </div>
+  <div class="collection-toolbar__right">
+    <input type="text" class="collection-toolbar__search" placeholder="Search for...">
+    {% if paginate.pages > 1 %}
+      <div class="collection-toolbar__pagination">
+        {% if paginate.previous %}
+          <a href="{{ paginate.previous.url }}">‹</a>
+        {% endif %}
+        <span>{{ paginate.current_page }} / {{ paginate.pages }}</span>
+        {% if paginate.next %}
+          <a href="{{ paginate.next.url }}">›</a>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+</section>
+
+{% comment %} 3. 产品网格 {% endcomment %}
+<section class="collection-grid container">
+  {% paginate collection.products by 9 %}
+    <div class="collection-grid__inner">
+      {% for product in collection.products %}
+        <div class="collection-grid__item">
+          {% render 'product-card', product: product %}
+        </div>
+      {% else %}
+        <p class="collection-grid__empty">No products found in this collection.</p>
+      {% endfor %}
+    </div>
+
+    {% if paginate.pages > 1 %}
+      <div class="collection-grid__pagination">
+        {% if paginate.previous %}
+          <a href="{{ paginate.previous.url }}">‹</a>
+        {% endif %}
+        <span>{{ paginate.current_page }} / {{ paginate.pages }}</span>
+        {% if paginate.next %}
+          <a href="{{ paginate.next.url }}">›</a>
+        {% endif %}
+      </div>
+    {% endif %}
+  {% endpaginate %}
+</section>
+
+{% schema %}
+{
+  "name": "Main Collection",
+  "settings": []
+}
+{% endschema %}
