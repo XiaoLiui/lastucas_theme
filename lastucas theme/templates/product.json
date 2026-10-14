@@ -3,11 +3,25 @@
     "main": {
       "type": "main-product"
     },
+    "order-protection": {
+      "type": "order-protection",
+      "settings": {}
+    },
     "usage-scenes": {
       "type": "usage-scenes",
       "settings": {
         "heading": "Designed for every space"
       }
+    },
+    "metafield-sections": {
+      "type": "product-metafields",
+      "settings": {}
+    },
+    "features": {
+      "type": "product-feature-builder",
+      "blocks": {},
+      "block_order": [],
+      "settings": {}
     },
     "recommendations": {
       "type": "product-recommendations",
@@ -20,5 +34,5 @@
       }
     }
   },
-  "order": ["main", "usage-scenes", "recommendations"]
+  "order": ["main", "order-protection", "usage-scenes", "metafield-sections", "features", "recommendations"]
 }

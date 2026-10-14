@@ -1,0 +1,77 @@
+{
+  "sections": {
+    "main": {
+      "type": "main-product"
+    },
+    "order-protection": {
+      "type": "order-protection",
+      "settings": {}
+    },
+    "metafield-sections": {
+      "type": "product-metafields",
+      "settings": {}
+    },
+    "features": {
+      "type": "product-feature-builder",
+      "blocks": {
+        "mt1": {
+          "type": "media_text",
+          "settings": {
+            "eyebrow": "Design",
+            "title": "Crafted for comfort",
+            "text": "<p>Every detail is considered, from the warm glow to the premium finish.</p>"
+          }
+        },
+        "icons": {
+          "type": "icon_features",
+          "settings": {
+            "heading": "Why you'll love it",
+            "title1": "Easy Assembly",
+            "text1": "Set up in minutes",
+            "title2": "Dimmable",
+            "text2": "Full brightness control",
+            "title3": "Long Lasting",
+            "text3": "Built to endure",
+            "title4": "Elegant Design",
+            "text4": "Fits any room"
+          }
+        },
+        "specs": {
+          "type": "specs_table",
+          "settings": {
+            "heading": "Specifications",
+            "row1_key": "Material",
+            "row1_val": "Metal + Fabric",
+            "row2_key": "Height",
+            "row2_val": "60 in",
+            "row3_key": "Power",
+            "row3_val": "AC 110V"
+          }
+        },
+        "faq": {
+          "type": "faq",
+          "settings": {
+            "heading": "FAQ",
+            "q1": "How long does shipping take?",
+            "a1": "<p>Orders ship within 2-4 business days.</p>",
+            "q2": "What is the return policy?",
+            "a2": "<p>We offer a 60-day easy return.</p>"
+          }
+        }
+      },
+      "block_order": ["mt1", "icons", "specs", "faq"],
+      "settings": {}
+    },
+    "recommendations": {
+      "type": "product-recommendations",
+      "settings": {
+        "heading": "You may also like",
+        "link_text": "Shop All Lighting",
+        "link_url": "/collections/all",
+        "products_to_show": 8,
+        "full_width": true
+      }
+    }
+  },
+  "order": ["main", "order-protection", "metafield-sections", "features", "recommendations"]
+}

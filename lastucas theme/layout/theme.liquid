@@ -152,13 +152,19 @@
         <div class="cart-drawer__rec-grid">
           {% for product in collections.all.products limit: 4 %}
             <a href="{{ product.url }}" class="cart-drawer__rec-item">
-              {% if product.featured_image %}
-                <img src="{{ product.featured_image | image_url: width: 400 }}" alt="{{ product.title | escape }}">
-              {% endif %}
-              <div class="cart-drawer__rec-name">{{ product.title | escape }} →</div>
+              <div class="cart-drawer__rec-img">
+                {% if product.featured_image %}
+                  <img src="{{ product.featured_image | image_url: width: 300 }}" alt="{{ product.title | escape }}" loading="lazy">
+                {% else %}
+                  {{ 'product-apparel-1' | placeholder_svg_tag: 'cart-drawer__rec-placeholder' }}
+                {% endif %}
+              </div>
+              <div class="cart-drawer__rec-name">{{ product.title | escape }}</div>
+              <div class="cart-drawer__rec-price">{{ product.price | money }}</div>
             </a>
           {% endfor %}
         </div>
+        <a href="{{ routes.all_products_collection_url }}" class="cart-drawer__rec-more">Shop all products →</a>
       </div>
     </aside>
   </div>

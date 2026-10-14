@@ -232,38 +232,39 @@
       </div>
     </div>
 
-    {% comment %} 下方全宽：技术细节 + 描述（类似亚马逊 A+，横跨整页，非左右分栏） {% endcomment %}
+    {% comment %} 下方全宽：描述 + 图标条（TECHNICAL DETAILS 已移除，参数由 Specifications 双栏表展示） {% endcomment %}
     <div class="product-page__lower">
-      <details class="product-page__details" open>
-        <summary class="product-page__details-summary">TECHNICAL DETAILS</summary>
-        <div class="product-page__specs">
-          {% if selected_variant.sku != blank %}
-            <span class="product-page__spec-label">MODEL</span>
-            <span class="product-page__spec-value" data-sku>{{ selected_variant.sku }}</span>
-          {% endif %}
-          {% if product.vendor != blank %}
-            <span class="product-page__spec-label">BRAND</span>
-            <span class="product-page__spec-value">{{ product.vendor | escape }}</span>
-          {% endif %}
-          {% if product.type != blank %}
-            <span class="product-page__spec-label">TYPE</span>
-            <span class="product-page__spec-value">{{ product.type | escape }}</span>
-          {% endif %}
-          {% if product.metafields.custom.specifications != blank %}
-            {% assign specs = product.metafields.custom.specifications.value %}
-            {% for spec in specs %}
-              <span class="product-page__spec-label">{{ spec[0] | upcase | escape }}</span>
-              <span class="product-page__spec-value">{{ spec[1] | escape }}</span>
-            {% endfor %}
-          {% endif %}
-        </div>
-      </details>
-
       {% comment %} 描述 {% endcomment %}
       {% if product.description != blank %}
         <div class="product-page__description">{{ product.description }}</div>
       {% endif %}
     </div>
+
+    {% comment %} 特性图标条（紧贴 TECHNICAL DETAILS 下方，数据来自产品元字段） {% endcomment %}
+    {%- liquid
+      assign icon_features = product.metafields.custom.icon_features.value
+      if icon_features == blank
+        assign icon_features = product.metafields.custom.icon_feature.value
+      endif
+    -%}
+    {%- if icon_features != blank and icon_features.size > 0 -%}
+      <div class="pfb__icons product-page__icons-strip">
+        <div class="pfb__icons-grid">
+          {%- for feature in icon_features -%}
+            <div class="pfb__icon-item">
+              {%- assign f_icon = feature.icon.value -%}
+              {%- if f_icon != blank -%}
+                <span class="pfb__icon"><img src="{{ f_icon | image_url: width: 120 }}" alt="{{ feature.title.value | escape }}" loading="lazy"></span>
+              {%- endif -%}
+              <span class="pfb__icon-title">{{ feature.title.value | escape }}</span>
+              {%- if feature.text.value != blank -%}
+                <span class="pfb__icon-text">{{ feature.text.value | escape }}</span>
+              {%- endif -%}
+            </div>
+          {%- endfor -%}
+        </div>
+      </div>
+    {%- endif -%}
   </div>
 
   {% comment %} 变体数据（供前端联动价格/SKU/可用性）{% endcomment %}

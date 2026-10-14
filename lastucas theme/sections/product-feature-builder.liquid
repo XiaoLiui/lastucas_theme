@@ -1,0 +1,342 @@
+{% comment %}
+  Product Feature Builder - 产品页长内容自由拼装模块
+  目的：让不同产品拥有不同的长页面布局（对应竞品"同一店铺不同产品不同页面"的效果）
+  原理：本 section 由多个 block 组成，每个 block 是一种内容块类型。
+  商家在 Shopify 后台自定义编辑器里，可以给每个产品增删、排序这些 block，
+  从而拼出千变万化的产品详情长页。内容文字/图片走 section 本地设置 + 产品 metafield 兜底。
+
+  支持的 block 类型：
+  - scene_gallery    场景图集（图 + 文案，多张可切换）
+  - media_text       交替图文（左图右文 / 右图左文）
+  - icon_features    特性图标条（图标 + 标题 + 描述）
+  - specs_table      规格参数表（键值对）
+  - faq              常见问题（折叠）
+  - testimonial      买家秀 / 评价引用
+  - image_banner     全宽大图
+{% endcomment %}
+
+{% if section.blocks.size > 0 %}
+<section class="pfb" data-pfb>
+  <div class="container">
+
+    {% for block in section.blocks %}
+      {% case block.type %}
+
+        {% comment %} ============ 场景图集（可切换的图文组） ============ {% endcomment %}
+        {% when 'scene_gallery' %}
+          <div class="pfb__scene" data-pfb-scene {{ block.shopify_attributes }}>
+            {% if block.settings.heading != blank %}
+              <h2 class="pfb__heading">{{ block.settings.heading | escape }}</h2>
+            {% endif %}
+
+            {% comment %} 图集项：从 block 设置里读多组图片（最多 4 组，每组 图+标题+文案） {% endcomment %}
+            {% assign scene_items = '' %}
+            <div class="pfb__scene-tabs" role="tablist">
+              {% for i in (1..4) %}
+                {%- capture img_key -%}scene_img{{ i }}{%- endcapture -%}
+                {%- capture label_key -%}scene_label{{ i }}{%- endcapture -%}
+                {%- if block.settings[img_key] != blank -%}
+                  <button type="button" class="pfb__scene-tab {% if forloop.first %}is-active{% endif %}"
+                          role="tab" data-scene-tab="{{ forloop.index0 }}"
+                          {% if block.settings[label_key] != blank %}aria-label="{{ block.settings[label_key] | escape }}"{% endif %}>
+                    {{ block.settings[label_key] | default: forloop.index }}
+                  </button>
+                {%- endif -%}
+              {% endfor %}
+            </div>
+
+            <div class="pfb__scene-panels">
+              {% for i in (1..4) %}
+                {%- capture img_key -%}scene_img{{ i }}{%- endcapture -%}
+                {%- capture text_key -%}scene_text{{ i }}{%- endcapture -%}
+                {%- capture label_key -%}scene_label{{ i }}{%- endcapture -%}
+                {%- if block.settings[img_key] != blank -%}
+                  <div class="pfb__scene-panel {% if forloop.first %}is-active{% endif %}" role="tabpanel" data-scene-panel="{{ forloop.index0 }}">
+                    <div class="pfb__scene-media">
+                      <img src="{{ block.settings[img_key] | image_url: width: 1600 }}"
+                           alt="{{ block.settings[label_key] | escape }}"
+                           loading="lazy" width="1600" height="1000">
+                    </div>
+                    {% if block.settings[text_key] != blank %}
+                      <div class="pfb__scene-text">{{ block.settings[text_key] | escape }}</div>
+                    {% endif %}
+                  </div>
+                {%- endif -%}
+              {% endfor %}
+            </div>
+          </div>
+
+        {% comment %} ============ 交替图文（左图右文 / 右图左文） ============ {% endcomment %}
+        {% when 'media_text' %}
+          <div class="pfb__media-text{% if block.settings.flip %} pfb__media-text--flip{% endif %}" {{ block.shopify_attributes }}>
+            <div class="pfb__media-text-media">
+              {% if block.settings.image != blank %}
+                <img src="{{ block.settings.image | image_url: width: 1200 }}"
+                     alt="{{ block.settings.title | escape }}"
+                     loading="lazy" width="1200" height="800">
+              {% endif %}
+            </div>
+            <div class="pfb__media-text-body">
+              {% if block.settings.eyebrow != blank %}
+                <span class="pfb__eyebrow">{{ block.settings.eyebrow | escape }}</span>
+              {% endif %}
+              {% if block.settings.title != blank %}
+                <h3 class="pfb__title">{{ block.settings.title | escape }}</h3>
+              {% endif %}
+              {% if block.settings.text != blank %}
+                <div class="pfb__text">{{ block.settings.text }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+        {% comment %} ============ 特性图标条 ============ {% endcomment %}
+        {% when 'icon_features' %}
+          <div class="pfb__icons" {{ block.shopify_attributes }}>
+            {% if block.settings.heading != blank %}
+              <h2 class="pfb__heading">{{ block.settings.heading | escape }}</h2>
+            {% endif %}
+            <div class="pfb__icons-grid">
+              {% for i in (1..4) %}
+                {%- capture icon_key -%}icon{{ i }}{%- endcapture -%}
+                {%- capture title_key -%}title{{ i }}{%- endcapture -%}
+                {%- capture text_key -%}text{{ i }}{%- endcapture -%}
+                {%- if block.settings[title_key] != blank -%}
+                  <div class="pfb__icon-item">
+                    {% if block.settings[icon_key] != blank %}
+                      <span class="pfb__icon"><img src="{{ block.settings[icon_key] | image_url: width: 120 }}" alt="" loading="lazy"></span>
+                    {% endif %}
+                    <span class="pfb__icon-title">{{ block.settings[title_key] | escape }}</span>
+                    {% if block.settings[text_key] != blank %}
+                      <span class="pfb__icon-text">{{ block.settings[text_key] | escape }}</span>
+                    {% endif %}
+                  </div>
+                {%- endif -%}
+              {% endfor %}
+            </div>
+          </div>
+
+        {% comment %} ============ 规格参数表（键值对） ============ {% endcomment %}
+        {% when 'specs_table' %}
+          <div class="pfb__specs" {{ block.shopify_attributes }}>
+            {% if block.settings.heading != blank %}
+              <h2 class="pfb__heading">{{ block.settings.heading | escape }}</h2>
+            {% endif %}
+            <table class="pfb__specs-table">
+              <tbody>
+                {% for i in (1..10) %}
+                  {%- capture key_key -%}row{{ i }}_key{%- endcapture -%}
+                  {%- capture val_key -%}row{{ i }}_val{%- endcapture -%}
+                  {%- if block.settings[key_key] != blank -%}
+                    <tr>
+                      <th>{{ block.settings[key_key] | escape }}</th>
+                      <td>{{ block.settings[val_key] | escape }}</td>
+                    </tr>
+                  {%- endif -%}
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+        {% comment %} ============ 常见问题（折叠） ============ {% endcomment %}
+        {% when 'faq' %}
+          <div class="pfb__faq" {{ block.shopify_attributes }}>
+            {% if block.settings.heading != blank %}
+              <h2 class="pfb__heading">{{ block.settings.heading | escape }}</h2>
+            {% endif %}
+            {% for i in (1..6) %}
+              {%- capture q_key -%}q{{ i }}{%- endcapture -%}
+              {%- capture a_key -%}a{{ i }}{%- endcapture -%}
+              {%- if block.settings[q_key] != blank -%}
+                <details class="pfb__faq-item">
+                  <summary class="pfb__faq-q">{{ block.settings[q_key] | escape }}</summary>
+                  <div class="pfb__faq-a">{{ block.settings[a_key] }}</div>
+                </details>
+              {%- endif -%}
+            {% endfor %}
+          </div>
+
+        {% comment %} ============ 买家秀 / 评价引用 ============ {% endcomment %}
+        {% when 'testimonial' %}
+          <div class="pfb__quote" {{ block.shopify_attributes }}>
+            {% if block.settings.quote != blank %}
+              <blockquote class="pfb__quote-text">{{ block.settings.quote | escape }}</blockquote>
+            {% endif %}
+            {% if block.settings.author != blank %}
+              <cite class="pfb__quote-author">{{ block.settings.author | escape }}</cite>
+            {% endif %}
+          </div>
+
+        {% comment %} ============ 全宽大图 ============ {% endcomment %}
+        {% when 'image_banner' %}
+          <div class="pfb__banner" {{ block.shopify_attributes }}>
+            {% if block.settings.image != blank %}
+              <img src="{{ block.settings.image | image_url: width: 2000 }}"
+                   alt="{{ block.settings.title | escape }}"
+                   loading="lazy" width="2000" height="800">
+            {% endif %}
+          </div>
+
+      {% endcase %}
+    {% endfor %}
+
+  </div>
+</section>
+
+{% comment %} 场景图集切换 JS {% endcomment %}
+<script>
+  (function () {
+    'use strict';
+    document.querySelectorAll('[data-pfb-scene]').forEach(function (scene) {
+      var tabs = scene.querySelectorAll('[data-scene-tab]');
+      var panels = scene.querySelectorAll('[data-scene-panel]');
+      if (!tabs.length || !panels.length) return;
+      function activate(idx) {
+        tabs.forEach(function (t) {
+          t.classList.toggle('is-active', t.getAttribute('data-scene-tab') == String(idx));
+        });
+        panels.forEach(function (p) {
+          p.classList.toggle('is-active', p.getAttribute('data-scene-panel') == String(idx));
+        });
+      }
+      tabs.forEach(function (tab) {
+        tab.addEventListener('click', function () {
+          activate(Number(tab.getAttribute('data-scene-tab')));
+        });
+      });
+    });
+  })();
+</script>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Product Feature Builder",
+  "tag": "section",
+  "class": "section-pfb",
+  "settings": [],
+  "blocks": [
+    {
+      "type": "scene_gallery",
+      "name": "场景图集",
+      "settings": [
+        { "type": "text", "id": "heading", "label": "标题", "default": "Designed for every space" },
+        { "type": "image_picker", "id": "scene_img1", "label": "图 1" },
+        { "type": "text", "id": "scene_label1", "label": "图 1 标签" },
+        { "type": "textarea", "id": "scene_text1", "label": "图 1 文案" },
+        { "type": "image_picker", "id": "scene_img2", "label": "图 2" },
+        { "type": "text", "id": "scene_label2", "label": "图 2 标签" },
+        { "type": "textarea", "id": "scene_text2", "label": "图 2 文案" },
+        { "type": "image_picker", "id": "scene_img3", "label": "图 3" },
+        { "type": "text", "id": "scene_label3", "label": "图 3 标签" },
+        { "type": "textarea", "id": "scene_text3", "label": "图 3 文案" },
+        { "type": "image_picker", "id": "scene_img4", "label": "图 4" },
+        { "type": "text", "id": "scene_label4", "label": "图 4 标签" },
+        { "type": "textarea", "id": "scene_text4", "label": "图 4 文案" }
+      ]
+    },
+    {
+      "type": "media_text",
+      "name": "交替图文",
+      "settings": [
+        { "type": "image_picker", "id": "image", "label": "图片" },
+        { "type": "text", "id": "eyebrow", "label": "小标题（眉标）" },
+        { "type": "text", "id": "title", "label": "标题" },
+        { "type": "richtext", "id": "text", "label": "正文" },
+        { "type": "checkbox", "id": "flip", "label": "图文左右对调", "default": false }
+      ]
+    },
+    {
+      "type": "icon_features",
+      "name": "特性图标条",
+      "settings": [
+        { "type": "text", "id": "heading", "label": "标题" },
+        { "type": "image_picker", "id": "icon1", "label": "图标 1" },
+        { "type": "text", "id": "title1", "label": "特性 1 标题" },
+        { "type": "text", "id": "text1", "label": "特性 1 描述" },
+        { "type": "image_picker", "id": "icon2", "label": "图标 2" },
+        { "type": "text", "id": "title2", "label": "特性 2 标题" },
+        { "type": "text", "id": "text2", "label": "特性 2 描述" },
+        { "type": "image_picker", "id": "icon3", "label": "图标 3" },
+        { "type": "text", "id": "title3", "label": "特性 3 标题" },
+        { "type": "text", "id": "text3", "label": "特性 3 描述" },
+        { "type": "image_picker", "id": "icon4", "label": "图标 4" },
+        { "type": "text", "id": "title4", "label": "特性 4 标题" },
+        { "type": "text", "id": "text4", "label": "特性 4 描述" }
+      ]
+    },
+    {
+      "type": "specs_table",
+      "name": "规格参数表",
+      "settings": [
+        { "type": "text", "id": "heading", "label": "标题", "default": "Specifications" },
+        { "type": "text", "id": "row1_key", "label": "第 1 行 - 参数名" },
+        { "type": "text", "id": "row1_val", "label": "第 1 行 - 参数值" },
+        { "type": "text", "id": "row2_key", "label": "第 2 行 - 参数名" },
+        { "type": "text", "id": "row2_val", "label": "第 2 行 - 参数值" },
+        { "type": "text", "id": "row3_key", "label": "第 3 行 - 参数名" },
+        { "type": "text", "id": "row3_val", "label": "第 3 行 - 参数值" },
+        { "type": "text", "id": "row4_key", "label": "第 4 行 - 参数名" },
+        { "type": "text", "id": "row4_val", "label": "第 4 行 - 参数值" },
+        { "type": "text", "id": "row5_key", "label": "第 5 行 - 参数名" },
+        { "type": "text", "id": "row5_val", "label": "第 5 行 - 参数值" },
+        { "type": "text", "id": "row6_key", "label": "第 6 行 - 参数名" },
+        { "type": "text", "id": "row6_val", "label": "第 6 行 - 参数值" },
+        { "type": "text", "id": "row7_key", "label": "第 7 行 - 参数名" },
+        { "type": "text", "id": "row7_val", "label": "第 7 行 - 参数值" },
+        { "type": "text", "id": "row8_key", "label": "第 8 行 - 参数名" },
+        { "type": "text", "id": "row8_val", "label": "第 8 行 - 参数值" },
+        { "type": "text", "id": "row9_key", "label": "第 9 行 - 参数名" },
+        { "type": "text", "id": "row9_val", "label": "第 9 行 - 参数值" },
+        { "type": "text", "id": "row10_key", "label": "第 10 行 - 参数名" },
+        { "type": "text", "id": "row10_val", "label": "第 10 行 - 参数值" }
+      ]
+    },
+    {
+      "type": "faq",
+      "name": "常见问题 FAQ",
+      "settings": [
+        { "type": "text", "id": "heading", "label": "标题", "default": "FAQ" },
+        { "type": "text", "id": "q1", "label": "问题 1" },
+        { "type": "richtext", "id": "a1", "label": "回答 1" },
+        { "type": "text", "id": "q2", "label": "问题 2" },
+        { "type": "richtext", "id": "a2", "label": "回答 2" },
+        { "type": "text", "id": "q3", "label": "问题 3" },
+        { "type": "richtext", "id": "a3", "label": "回答 3" },
+        { "type": "text", "id": "q4", "label": "问题 4" },
+        { "type": "richtext", "id": "a4", "label": "回答 4" },
+        { "type": "text", "id": "q5", "label": "问题 5" },
+        { "type": "richtext", "id": "a5", "label": "回答 5" },
+        { "type": "text", "id": "q6", "label": "问题 6" },
+        { "type": "richtext", "id": "a6", "label": "回答 6" }
+      ]
+    },
+    {
+      "type": "testimonial",
+      "name": "买家秀 / 评价",
+      "settings": [
+        { "type": "textarea", "id": "quote", "label": "评价内容" },
+        { "type": "text", "id": "author", "label": "评价人" }
+      ]
+    },
+    {
+      "type": "image_banner",
+      "name": "全宽大图",
+      "settings": [
+        { "type": "image_picker", "id": "image", "label": "图片" },
+        { "type": "text", "id": "title", "label": "图片 alt 文本" }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Product Feature Builder",
+      "blocks": [
+        { "type": "media_text" },
+        { "type": "icon_features" },
+        { "type": "specs_table" },
+        { "type": "faq" }
+      ]
+    }
+  ]
+}
+{% endschema %}
