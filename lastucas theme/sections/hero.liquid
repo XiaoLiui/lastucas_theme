@@ -1,6 +1,8 @@
 {% comment %}
-  Hero Slideshow - 全屏背景图 + 右下文案 + 左右箭头
-  对应截图：整图背景，右下角 "COMFORT IN EVERY GLOW"
+  Hero Slideshow - 全屏背景图轮播（默认纯图片，无文字）
+  文字叠加层默认关闭，可在 Customizer 勾选「Show text overlay」开启。
+  交互：8s 自动轮播，用户交互后停自动播放，键盘左右切换（见 theme.js）；
+  箭头：hover 时线条伸长（> → ->），不变色。
 {% endcomment %}
 <section class="hero" data-hero>
   <div class="hero__slides">
@@ -21,16 +23,45 @@
             loading="{% if forloop.first %}eager{% else %}lazy{% endif %}"
           >
         {% endif %}
+
+        {% comment %} 文字安全区（默认关闭，纯图片展示；可在 Customizer 勾选「Show text overlay」开启） {% endcomment %}
+        {% if block.settings.show_text %}
+          <div class="hero__content" style="color: {{ block.settings.text_color | default: '#F3EEE5' }};">
+            {% if block.settings.eyebrow != blank %}
+              <p class="hero__eyebrow">{{ block.settings.eyebrow | escape }}</p>
+            {% endif %}
+            {% if block.settings.title != blank %}
+              <h2 class="hero__title">{{ block.settings.title | escape | newline_to_br }}</h2>
+            {% endif %}
+            {% if block.settings.subtitle != blank %}
+              <p class="hero__subtitle">{{ block.settings.subtitle | escape }}</p>
+            {% endif %}
+            {% if block.settings.button_label != blank or block.settings.secondary_button_label != blank %}
+              <div class="hero__cta">
+                {% if block.settings.button_label != blank %}
+                  <a href="{{ block.settings.button_link | default: '#' }}" class="hero__btn hero__btn--primary">{{ block.settings.button_label | escape }}</a>
+                {% endif %}
+                {% if block.settings.secondary_button_label != blank %}
+                  <a href="{{ block.settings.secondary_button_link | default: '#' }}" class="hero__btn hero__btn--outline">{{ block.settings.secondary_button_label | escape }}</a>
+                {% endif %}
+              </div>
+            {% endif %}
+          </div>
+        {% endif %}
       </div>
     {% endfor %}
   </div>
 
   {% if section.blocks.size > 1 %}
-    <button class="hero__arrow hero__arrow--prev" aria-label="Previous slide" data-arrow="prev">‹</button>
-    <button class="hero__arrow hero__arrow--next" aria-label="Next slide" data-arrow="next">›</button>
+    <button class="hero__arrow hero__arrow--prev" aria-label="Previous slide" data-arrow="prev">
+      <span class="hero-arrow"><span class="hero-arrow__shaft"></span><span class="hero-arrow__head"></span></span>
+    </button>
+    <button class="hero__arrow hero__arrow--next" aria-label="Next slide" data-arrow="next">
+      <span class="hero-arrow"><span class="hero-arrow__shaft"></span><span class="hero-arrow__head"></span></span>
+    </button>
     <div class="hero__dots" data-dots>
       {% for block in section.blocks %}
-        <span class="hero__dot {% if forloop.first %}is-active{% endif %}" data-dot="{{ forloop.index0 }}"></span>
+        <button type="button" class="hero__dot {% if forloop.first %}is-active{% endif %}" data-dot="{{ forloop.index0 }}" aria-label="Go to slide {{ forloop.index }}"></button>
       {% endfor %}
     </div>
   {% endif %}
@@ -47,11 +78,35 @@
       "name": "Slide",
       "settings": [
         { "type": "image_picker", "id": "image", "label": "Background image" },
-        { "type": "text", "id": "title", "label": "Title", "default": "COMFORT IN EVERY GLOW" },
-        { "type": "text", "id": "subtitle", "label": "Subtitle" },
-        { "type": "text", "id": "button_label", "label": "Button label" },
-        { "type": "url", "id": "button_link", "label": "Button link" },
-        { "type": "color", "id": "text_color", "label": "Text color", "default": "#FFFFFF" }
+        {
+          "type": "checkbox",
+          "id": "show_text",
+          "label": "Show text overlay",
+          "default": false
+        },
+        {
+          "type": "text",
+          "id": "eyebrow",
+          "label": "Eyebrow",
+          "default": "FLOOR LAMPS · CRAFTED IN SMALL BATCHES"
+        },
+        {
+          "type": "textarea",
+          "id": "title",
+          "label": "Heading",
+          "default": "Timeless floor lamps, cast in warm light."
+        },
+        {
+          "type": "textarea",
+          "id": "subtitle",
+          "label": "Subtitle",
+          "default": "Solid walnut and brushed brass, designed to make every evening feel considered."
+        },
+        { "type": "text", "id": "button_label", "label": "Primary button label", "default": "Shop Floor Lamps" },
+        { "type": "url", "id": "button_link", "label": "Primary button link" },
+        { "type": "text", "id": "secondary_button_label", "label": "Secondary button label", "default": "Our Story" },
+        { "type": "url", "id": "secondary_button_link", "label": "Secondary button link" },
+        { "type": "color", "id": "text_color", "label": "Text color", "default": "#F3EEE5" }
       ]
     }
   ],

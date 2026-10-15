@@ -66,6 +66,7 @@
 
           <aside class="cart-summary">
             <h2 class="cart-summary__title">Order Summary</h2>
+            {% render 'free-shipping-bar' %}
             <div class="cart-summary__row">
               <span>Subtotal</span>
               <strong data-cart-page-subtotal>{{ cart.total_price | money }}</strong>

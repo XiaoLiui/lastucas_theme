@@ -1,10 +1,20 @@
 /* ============================================
-   SUNMORY Minimal Theme - 全局交互
+   LASTUCAS Theme - 全局交互
    原生 JS，不依赖任何库。改交互只动这里。
    ============================================ */
 
 (function () {
   'use strict';
+
+  /* --- 无障碍播报 + 动效降级检测 --- */
+  const prefersReducedMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  function announce(message) {
+    const region = document.querySelector('[data-live-region]');
+    if (region) {
+      region.textContent = '';
+      setTimeout(function () { region.textContent = message; }, 50);
+    }
+  }
 
   /* --- 货币格式化：与 Shopify `money` 过滤器一致，支持多币种 --- */
   function formatMoney(cents, format) {
@@ -57,7 +67,7 @@
         if (isFinite(r) && r > 0) { amount = amount * r; }
       }
     } catch (e) {}
-    var fmt = (window.SUNMORY && window.SUNMORY.moneyFormat) || '{{amount}}';
+    var fmt = (window.LASTUCAS && window.LASTUCAS.moneyFormat) || '{{amount}}';
     return formatMoney(amount, fmt);
   }
 
@@ -69,22 +79,52 @@
     });
   }
 
-  /* --- Mobile Menu Drawer --- */
+  /* --- Mobile Menu Drawer（含焦点管理 + 二级子菜单） --- */
   const menuToggle = document.querySelector('.header__menu-toggle');
   const mobileMenu = document.querySelector('[data-mobile-menu]');
   const menuCloseBtns = document.querySelectorAll('[data-mobile-menu-close]');
+  let menuTrapCleanup = null;
+
+  function openMobileMenu() {
+    if (!mobileMenu) return;
+    mobileMenu.classList.add('is-open');
+    mobileMenu.setAttribute('aria-hidden', 'false');
+    if (menuToggle) menuToggle.setAttribute('aria-expanded', 'true');
+    if (window.LASTUCAS) {
+      window.LASTUCAS.setPageInert(true);
+      menuTrapCleanup = window.LASTUCAS.trapFocus(mobileMenu);
+    }
+  }
+  function closeMobileMenu() {
+    if (!mobileMenu) return;
+    mobileMenu.classList.remove('is-open');
+    mobileMenu.setAttribute('aria-hidden', 'true');
+    if (menuToggle) menuToggle.setAttribute('aria-expanded', 'false');
+    if (window.LASTUCAS) window.LASTUCAS.setPageInert(false);
+    if (menuTrapCleanup) { menuTrapCleanup(); menuTrapCleanup = null; }
+  }
 
   if (menuToggle && mobileMenu) {
-    menuToggle.addEventListener('click', () => {
-      mobileMenu.classList.add('is-open');
-      document.body.style.overflow = 'hidden';
+    menuToggle.addEventListener('click', function () {
+      if (mobileMenu.classList.contains('is-open')) closeMobileMenu();
+      else openMobileMenu();
     });
-
-    menuCloseBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        mobileMenu.classList.remove('is-open');
-        document.body.style.overflow = '';
-      });
+    menuCloseBtns.forEach(function (btn) {
+      btn.addEventListener('click', closeMobileMenu);
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && mobileMenu.classList.contains('is-open')) closeMobileMenu();
+    });
+    // 二级子菜单：点击带子级的一级项原地展开/收起
+    mobileMenu.addEventListener('click', function (e) {
+      const link = e.target.closest('.mobile-menu__link');
+      if (!link) return;
+      const item = link.closest('.mobile-menu__item');
+      if (item && item.querySelector('.mobile-menu__submenu')) {
+        e.preventDefault();
+        const open = item.classList.toggle('is-open');
+        link.setAttribute('aria-expanded', String(open));
+      }
     });
   }
 
@@ -94,40 +134,58 @@
     const slides = hero.querySelectorAll('[data-slide]');
     const dots = hero.querySelectorAll('[data-dot]');
     let current = 0;
+    let autoTimer = null;
+    let autoStopped = false;
 
     function goTo(index) {
-      slides[current].classList.remove('is-active');
-      dots.forEach(d => d.classList.remove('is-active'));
+      if (!slides.length) return;
+      slides.forEach(function (s) { s.classList.remove('is-active'); });
+      if (dots.length) dots.forEach(function (d) { d.classList.remove('is-active'); });
       current = (index + slides.length) % slides.length;
       slides[current].classList.add('is-active');
       if (dots[current]) dots[current].classList.add('is-active');
     }
+    function stopAuto() {
+      autoStopped = true;
+      if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+    }
+    function startAuto() {
+      if (slides.length <= 1 || autoStopped || prefersReducedMotion) return;
+      autoTimer = setInterval(function () { goTo(current + 1); }, 8000);
+    }
 
-    hero.querySelectorAll('[data-arrow]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const dir = btn.dataset.arrow === 'next' ? 1 : -1;
-        goTo(current + dir);
+    hero.querySelectorAll('[data-arrow]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        stopAuto();
+        goTo(current + (btn.dataset.arrow === 'next' ? 1 : -1));
       });
     });
 
-    dots.forEach(dot => {
-      dot.addEventListener('click', () => goTo(Number(dot.dataset.dot)));
+    dots.forEach(function (dot) {
+      dot.addEventListener('click', function () {
+        stopAuto();
+        goTo(Number(dot.dataset.dot));
+      });
     });
 
-    // 自动轮播（8 秒）
-    if (slides.length > 1) {
-      setInterval(() => goTo(current + 1), 8000);
-    }
-  }
-
-  /* --- 移动端菜单按钮（预留，后续接抽屉） --- */
-  const toggle = document.querySelector('.header__menu-toggle');
-  if (toggle) {
-    toggle.addEventListener('click', () => {
-      const expanded = toggle.getAttribute('aria-expanded') === 'true';
-      toggle.setAttribute('aria-expanded', String(!expanded));
-      document.body.classList.toggle('nav-open');
+    // 键盘左右切换（焦点不在交互元素上时生效）
+    hero.setAttribute('tabindex', '0');
+    hero.addEventListener('keydown', function (e) {
+      const t = e.target;
+      if (t && t.closest && (t.closest('a') || t.closest('button') || t.closest('input'))) return;
+      if (e.key === 'ArrowLeft') { stopAuto(); goTo(current - 1); }
+      else if (e.key === 'ArrowRight') { stopAuto(); goTo(current + 1); }
     });
+
+    // 触摸滑动：任何用户交互后停止自动播放
+    let heroTouchX = 0;
+    hero.addEventListener('touchstart', function (e) { heroTouchX = e.touches[0].clientX; }, { passive: true });
+    hero.addEventListener('touchend', function (e) {
+      const dx = e.changedTouches[0].clientX - heroTouchX;
+      if (Math.abs(dx) > 40) { stopAuto(); goTo(current + (dx < 0 ? 1 : -1)); }
+    }, { passive: true });
+
+    startAuto();
   }
 
   /* --- 搜索抽屉 --- */
@@ -140,17 +198,22 @@
   const searchTrending = document.querySelector('[data-search-trending]');
   const searchForm = document.querySelector('[data-search-form]');
 
+  let searchTrapCleanup = null;
   function openSearchDrawer() {
     searchDrawer.classList.add('is-open');
     searchDrawer.setAttribute('aria-hidden', 'false');
-    document.body.style.overflow = 'hidden';
+    if (window.LASTUCAS) {
+      window.LASTUCAS.setPageInert(true);
+      searchTrapCleanup = window.LASTUCAS.trapFocus(searchDrawer);
+    }
     setTimeout(() => searchInput.focus(), 300);
   }
 
   function closeSearchDrawer() {
     searchDrawer.classList.remove('is-open');
     searchDrawer.setAttribute('aria-hidden', 'true');
-    document.body.style.overflow = '';
+    if (window.LASTUCAS) window.LASTUCAS.setPageInert(false);
+    if (searchTrapCleanup) { searchTrapCleanup(); searchTrapCleanup = null; }
     searchInput.value = '';
     searchResults.innerHTML = '';
     searchLoading.hidden = true;
@@ -163,6 +226,9 @@
   }
   searchCloseBtns.forEach(btn => {
     btn.addEventListener('click', closeSearchDrawer);
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && searchDrawer.classList.contains('is-open')) closeSearchDrawer();
   });
 
   // 表单提交：跳转到完整搜索结果页
@@ -285,24 +351,32 @@
   const cartRecommendations = document.querySelector('[data-cart-recommendations]');
 
   // 登录状态（由 theme.liquid 注入）：true=登录，false=未登录
-  const customerLoggedIn = !!(window.SUNMORY && window.SUNMORY.customerLoggedIn);
-  const CART_CACHE_KEY = 'sunmory:cart';
+  const customerLoggedIn = !!(window.LASTUCAS && window.LASTUCAS.customerLoggedIn);
+  const CART_CACHE_KEY = 'lastucas:cart';
 
   let currentCart = null; // 内存中的购物车状态
+  let lastAddedVariantId = null; // 最近加购的 variant id（用于新行高亮）
+  let cartTrapCleanup = null;
 
-  // 免邮门槛（单位：分）。0 = 全场免邮（固定显示 "You are eligible for free shipping."）
-  // 例：满 $100 免邮改为 10000，未满时显示 "You're $X away from free shipping."
-  const FREE_SHIPPING_THRESHOLD = 0;
+  // 免邮门槛（单位：分）。$150 = 15000。业务可改此处或 snippet 的 threshold 参数。
+  const FREE_SHIPPING_THRESHOLD = 15000;
 
-  function updateShippingMsg(subtotalCents) {
-    const msg = document.querySelector('[data-cart-shipping]');
-    if (!msg) return;
-    if (FREE_SHIPPING_THRESHOLD <= 0 || subtotalCents >= FREE_SHIPPING_THRESHOLD) {
-      msg.textContent = 'You are eligible for free shipping.';
-    } else {
-      msg.textContent = "You're " + money(FREE_SHIPPING_THRESHOLD - subtotalCents) + ' away from free shipping.';
-    }
-    msg.hidden = false;
+  function updateFreeShippingBar(subtotalCents) {
+    document.querySelectorAll('[data-free-shipping]').forEach(function (bar) {
+      const threshold = parseInt(bar.getAttribute('data-threshold'), 10) || FREE_SHIPPING_THRESHOLD;
+      const msg = bar.querySelector('[data-fs-msg]');
+      const fill = bar.querySelector('[data-fs-fill]');
+      const complete = subtotalCents >= threshold;
+      if (msg) {
+        msg.textContent = complete
+          ? "You've unlocked free shipping."
+          : "You're " + money(threshold - subtotalCents) + ' away from free shipping.';
+      }
+      if (fill) {
+        fill.style.width = Math.min(100, Math.round(subtotalCents * 100 / threshold)) + '%';
+      }
+      bar.classList.toggle('is-complete', complete);
+    });
   }
 
   function cacheRead() {
@@ -331,11 +405,17 @@
   function openDrawer() {
     drawer.classList.add('is-open');
     drawer.setAttribute('aria-hidden', 'false');
+    if (window.LASTUCAS) {
+      window.LASTUCAS.setPageInert(true);
+      cartTrapCleanup = window.LASTUCAS.trapFocus(drawer);
+    }
     loadCart();
   }
   function closeDrawer() {
     drawer.classList.remove('is-open');
     drawer.setAttribute('aria-hidden', 'true');
+    if (window.LASTUCAS) window.LASTUCAS.setPageInert(false);
+    if (cartTrapCleanup) { cartTrapCleanup(); cartTrapCleanup = null; }
   }
 
   async function loadCart() {
@@ -404,7 +484,7 @@
     cartFooter.hidden = false;
     if (cartRecommendations) cartRecommendations.hidden = true;
     cartSubtotal.textContent = money(cart.total_price);
-    updateShippingMsg(cart.total_price);
+    updateFreeShippingBar(cart.total_price);
 
     cartBody.innerHTML = cart.items.map((item, index) => {
       const line = index + 1; // 1-based，对应 /cart/change.js 的 line 参数
@@ -413,8 +493,9 @@
       const variantText = item.variant_title
         ? `<div class="cart-drawer__item-variant">${item.variant_title}</div>`
         : '';
+      const isNew = lastAddedVariantId && item.variant_id === lastAddedVariantId ? ' is-new' : '';
       return `
-      <div class="cart-drawer__item" data-line="${line}">
+      <div class="cart-drawer__item${isNew}" data-line="${line}" data-variant-id="${item.variant_id || ''}">
         <a class="cart-drawer__item-img-link" href="${productUrl}">
           <img class="cart-drawer__item-img" src="${item.image || ''}" alt="${item.product_title}">
         </a>
@@ -431,6 +512,8 @@
         </div>
       </div>`;
     }).join('');
+    // 高亮完成后清除标记，避免后续重渲染重复高亮
+    if (lastAddedVariantId) lastAddedVariantId = null;
   }
 
   // 局部更新某一行（数量变化 / 删除），不重建整个列表
@@ -446,7 +529,7 @@
     }
 
     cartSubtotal.textContent = money(currentCart.total_price);
-    updateShippingMsg(currentCart.total_price);
+    updateFreeShippingBar(currentCart.total_price);
     // 角标按产品种类数（行数）计；0 件时隐藏
     updateBadge((currentCart.items || []).length);
 
@@ -477,6 +560,7 @@
     // 2) 立即局部更新 UI（对应反应，不刷新整个抽屉）
     if (quantity <= 0) {
       renderCart(currentCart); // 删除会让后续行 line 重排，需整体重渲染（无 Loading）
+      announce('Item removed from cart.');
     } else {
       updateLineUI(line); // 数量增减只局部更新该行
     }
@@ -520,7 +604,7 @@
     });
   }
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeDrawer();
+    if (e.key === 'Escape' && drawer.classList.contains('is-open')) closeDrawer();
   });
 
   // 事件委托：数量输入框修改 / 移除
@@ -653,15 +737,24 @@
   /* --- 清空购物车：确认弹窗 → /cart/clear.js → 刷新（服务端已空，全站状态准确） --- */
   const confirmModal = document.querySelector('[data-confirm-modal]');
   let confirmCallback = null;
+  let confirmTrapCleanup = null;
   function openConfirm(cb) {
     if (!confirmModal) { cb(); return; }
     confirmCallback = cb;
     confirmModal.hidden = false;
-    requestAnimationFrame(() => confirmModal.classList.add('is-open'));
+    requestAnimationFrame(() => {
+      confirmModal.classList.add('is-open');
+      if (window.LASTUCAS) {
+        window.LASTUCAS.setPageInert(true);
+        confirmTrapCleanup = window.LASTUCAS.trapFocus(confirmModal);
+      }
+    });
   }
   function closeConfirm() {
     if (!confirmModal) return;
     confirmModal.classList.remove('is-open');
+    if (window.LASTUCAS) window.LASTUCAS.setPageInert(false);
+    if (confirmTrapCleanup) { confirmTrapCleanup(); confirmTrapCleanup = null; }
     setTimeout(() => { confirmModal.hidden = true; confirmCallback = null; }, 220);
   }
   if (confirmModal) {
@@ -694,12 +787,44 @@
     });
   });
 
-  // 产品页 AJAX 加购：拦截表单提交，成功后打开购物车抽屉
+  // 产品页 AJAX 加购：拦截表单提交，成功后打开购物车抽屉；loading 态 + inline 错误（替代 alert）
   const productForm = document.querySelector('[data-product-form]');
   if (productForm) {
+    const addErrorEl = document.querySelector('[data-add-error]');
+    const mainAddBtn = productForm.querySelector('[data-add-to-cart]');
+    const stickyAddBtn = document.querySelector('[data-sticky-add-to-cart-btn]');
+
+    function setAddLoading(loading) {
+      [mainAddBtn, stickyAddBtn].forEach(function (btn) {
+        if (!btn) return;
+        if (loading) {
+          if (!btn.dataset.originalLabel) btn.dataset.originalLabel = btn.textContent;
+          btn.disabled = true;
+          btn.classList.add('is-loading');
+          btn.textContent = 'Adding…';
+        } else {
+          btn.disabled = false;
+          btn.classList.remove('is-loading');
+          if (btn.dataset.originalLabel) {
+            btn.textContent = btn.dataset.originalLabel;
+            delete btn.dataset.originalLabel;
+          }
+        }
+      });
+    }
+    function showAddError(message) {
+      if (addErrorEl) {
+        addErrorEl.textContent = message;
+        addErrorEl.classList.add('is-visible');
+      }
+      announce(message);
+    }
+
     productForm.addEventListener('submit', async (e) => {
       e.preventDefault();
+      if (addErrorEl) addErrorEl.classList.remove('is-visible');
       const formData = new FormData(productForm);
+      setAddLoading(true);
       try {
         const res = await fetch('/cart/add.js', {
           method: 'POST',
@@ -708,18 +833,56 @@
         if (res.ok) {
           // add.js 返回最新购物车，先落本地缓存再打开抽屉，保证新商品立刻显示
           const cart = await res.json();
+          lastAddedVariantId = Number(formData.get('id')) || null;
           currentCart = cart;
           cacheWrite(cart);
+          announce('Added to cart.');
           openDrawer();
         } else {
           const err = await res.json();
-          alert(err.description || 'Failed to add to cart');
+          showAddError(err.description || 'Failed to add to cart');
         }
       } catch (err) {
-        alert('Error adding to cart. Please try again.');
+        showAddError('Error adding to cart. Please try again.');
+      } finally {
+        setAddLoading(false);
       }
     });
   }
+
+  /* --- 产品卡快捷加购（单变体直加，多变体跳 PDP） --- */
+  document.addEventListener('click', async function (e) {
+    const btn = e.target.closest('[data-quick-add]');
+    if (!btn) return;
+    e.preventDefault();
+    const variantId = btn.getAttribute('data-variant-id');
+    if (!variantId) return;
+    const original = btn.innerHTML;
+    btn.classList.add('is-loading');
+    btn.textContent = 'Adding…';
+    try {
+      const res = await fetch('/cart/add.js', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: Number(variantId), quantity: 1 })
+      });
+      if (res.ok) {
+        const cart = await res.json();
+        lastAddedVariantId = Number(variantId);
+        currentCart = cart;
+        cacheWrite(cart);
+        announce('Added to cart.');
+        openDrawer();
+      } else {
+        announce('Could not add to cart.');
+      }
+    } catch (err) {
+      announce('Could not add to cart.');
+    } finally {
+      btn.classList.remove('is-loading');
+      btn.innerHTML = original;
+    }
+  });
 
   /* --- 产品详情页：变体联动 + 图片画廊 + 数量 + Buy Now --- */
   const productPage = document.querySelector('.product-page');
@@ -754,6 +917,12 @@
     const mainImageWrap = productPage.querySelector('[data-main-image]');
     const optionValueLabels = productPage.querySelectorAll('[data-option-value]');
 
+    // 吸底加购条元素
+    const stickyBar = document.querySelector('[data-sticky-add-to-cart]');
+    const stickyPrice = document.querySelector('[data-sticky-price]');
+    const stickyCompare = document.querySelector('[data-sticky-compare]');
+    const stickyBtn = document.querySelector('[data-sticky-add-to-cart-btn]');
+
     // 设置颜色 swatch 背景
     productPage.querySelectorAll('[data-swatch-dot]').forEach(function (dot) {
       const key = (dot.dataset.swatchDot || '').trim().toLowerCase().replace(/\s+/g, '');
@@ -775,6 +944,29 @@
         });
       });
       return match || variants[0];
+    }
+
+    // 组合可行性预判：把当前选中组合之外的 option 值逐一代入，
+    // 若不存在「可用且匹配」的变体，则该值显示为不可用（aria-disabled）。
+    function updateAvailability() {
+      if (!variants.length) return;
+      productPage.querySelectorAll('[data-option-index]').forEach(function (btn) {
+        const idx = btn.dataset.optionIndex;
+        const value = btn.dataset.value;
+        const testOptions = Object.assign({}, selectedOptions);
+        testOptions[idx] = value;
+        const match = variants.some(function (v) {
+          if (!v.available) return false;
+          return (v.options || []).every(function (val, i) {
+            const sel = testOptions[i];
+            return sel === undefined || sel === val;
+          });
+        });
+        const unavailable = !match;
+        btn.classList.toggle('is-unavailable', unavailable);
+        if (unavailable) btn.setAttribute('aria-disabled', 'true');
+        else btn.removeAttribute('aria-disabled');
+      });
     }
 
     function updateVariantUI() {
@@ -806,6 +998,20 @@
         addBtn.textContent = variant.available ? 'Add to cart' : 'Sold out';
       }
       if (buyBtn) buyBtn.disabled = !variant.available;
+      // 吸底加购条：价格 / 划线价 / 按钮状态与主 CTA 联动
+      if (stickyPrice) stickyPrice.textContent = money(variant.price);
+      if (stickyCompare) {
+        if (variant.compare_at_price && variant.compare_at_price > variant.price) {
+          stickyCompare.textContent = money(variant.compare_at_price);
+          stickyCompare.hidden = false;
+        } else {
+          stickyCompare.hidden = true;
+        }
+      }
+      if (stickyBtn) {
+        stickyBtn.disabled = !variant.available;
+        stickyBtn.textContent = variant.available ? 'Add to cart' : 'Sold out';
+      }
       // 变体图切换：若该变体有独立图，滑动到对应 slide
       const imgUrl = variantImages[variant.id];
       if (imgUrl && typeof goToSlide === 'function') {
@@ -816,6 +1022,7 @@
     // 变体按钮点击
     productPage.querySelectorAll('[data-option-index]').forEach(function (btn) {
       btn.addEventListener('click', function () {
+        if (btn.classList.contains('is-unavailable')) return;
         const idx = btn.dataset.optionIndex;
         const value = btn.dataset.value;
         selectedOptions[idx] = value;
@@ -824,6 +1031,7 @@
         });
         if (optionValueLabels[idx]) optionValueLabels[idx].textContent = value;
         updateVariantUI();
+        updateAvailability();
       });
     });
 
@@ -928,6 +1136,7 @@
     }
 
     // 放大预览 lightbox
+    let lightboxTrapCleanup = null;
     function lightboxShow(idx) {
       const img = slides[idx] ? slides[idx].querySelector('img') : null;
       const src = img ? (img.getAttribute('data-zoom') || img.getAttribute('data-src') || img.src) : '';
@@ -936,14 +1145,18 @@
         lightbox.hidden = false;
         lightbox.setAttribute('aria-hidden', 'false');
       }
-      document.body.style.overflow = 'hidden';
+      if (window.LASTUCAS) {
+        window.LASTUCAS.setPageInert(true);
+        lightboxTrapCleanup = window.LASTUCAS.trapFocus(lightbox);
+      }
     }
     function lightboxHide() {
       if (lightbox) {
         lightbox.hidden = true;
         lightbox.setAttribute('aria-hidden', 'true');
       }
-      document.body.style.overflow = '';
+      if (window.LASTUCAS) window.LASTUCAS.setPageInert(false);
+      if (lightboxTrapCleanup) { lightboxTrapCleanup(); lightboxTrapCleanup = null; }
     }
     if (zoomBtn) {
       zoomBtn.addEventListener('click', function (e) {
@@ -1023,8 +1236,22 @@
       });
     }
 
-    // 初始化（同步默认变体的价格/SKU/可用性）
+    // 初始化（同步默认变体的价格/SKU/可用性 + 无货组合禁用态）
     updateVariantUI();
+    updateAvailability();
+
+    // 吸底加购条：滚动越过主 CTA 后出现（仅移动端）
+    if (stickyBar && addBtn) {
+      function updateStickyVisibility() {
+        const rect = addBtn.getBoundingClientRect();
+        const visible = window.innerWidth <= 768 && rect.bottom < 0;
+        stickyBar.classList.toggle('is-visible', visible);
+        stickyBar.setAttribute('aria-hidden', visible ? 'false' : 'true');
+      }
+      window.addEventListener('scroll', updateStickyVisibility, { passive: true });
+      window.addEventListener('resize', updateStickyVisibility);
+      updateStickyVisibility();
+    }
   }
 
   /* --- Header 滚动控制 ---
@@ -1060,12 +1287,14 @@
         }
       }
 
-      // 2. 下滑隐藏，上滑显示
-      const diff = y - lastY;
-      if (diff > 4 && y > announcementHeight + 50) {
-        headerEl.classList.add('header--hidden');
-      } else if (diff < -4 || y <= announcementHeight + 50) {
-        headerEl.classList.remove('header--hidden');
+      // 2. 下滑隐藏，上滑显示（prefers-reduced-motion 下禁用隐藏动画）
+      if (!prefersReducedMotion) {
+        const diff = y - lastY;
+        if (diff > 4 && y > announcementHeight + 50) {
+          headerEl.classList.add('header--hidden');
+        } else if (diff < -4 || y <= announcementHeight + 50) {
+          headerEl.classList.remove('header--hidden');
+        }
       }
 
       lastY = y;
@@ -1138,6 +1367,14 @@
       ticking = false;
     }
 
+    // 动效降级：prefers-reduced-motion 下静态呈现（卡片直接可见，不做滚动动画）
+    if (prefersReducedMotion) {
+      if (imageWrap) { imageWrap.style.width = '100%'; imageWrap.style.borderRadius = '0'; }
+      if (overlay) overlay.style.opacity = '0.2';
+      if (card) card.classList.add('is-visible');
+      return;
+    }
+
     window.addEventListener('scroll', () => {
       if (ticking) return;
       ticking = true;
@@ -1166,4 +1403,74 @@
       });
     });
   }
+
+  /* --- 集合页筛选：移动端 bottom sheet + 色板颜色映射 --- */
+  const filterToggle = document.querySelector('[data-filter-toggle]');
+  const filtersSheet = document.querySelector('[data-filters-sheet]');
+  let filtersTrapCleanup = null;
+  function openFiltersSheet() {
+    if (!filtersSheet) return;
+    filtersSheet.hidden = false;
+    filtersSheet.classList.add('is-open');
+    if (filterToggle) filterToggle.setAttribute('aria-expanded', 'true');
+    if (window.LASTUCAS) {
+      window.LASTUCAS.setPageInert(true);
+      filtersTrapCleanup = window.LASTUCAS.trapFocus(filtersSheet);
+    }
+  }
+  function closeFiltersSheet() {
+    if (!filtersSheet) return;
+    filtersSheet.classList.remove('is-open');
+    if (filterToggle) filterToggle.setAttribute('aria-expanded', 'false');
+    if (window.LASTUCAS) window.LASTUCAS.setPageInert(false);
+    if (filtersTrapCleanup) { filtersTrapCleanup(); filtersTrapCleanup = null; }
+    setTimeout(function () { filtersSheet.hidden = true; }, 300);
+  }
+  if (filterToggle) filterToggle.addEventListener('click', openFiltersSheet);
+  if (filtersSheet) {
+    filtersSheet.querySelectorAll('[data-filters-sheet-close]').forEach(function (el) {
+      el.addEventListener('click', closeFiltersSheet);
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && filtersSheet.classList.contains('is-open')) closeFiltersSheet();
+    });
+  }
+
+  // Finish/颜色 swatch：把已知颜色名映射为色块
+  const swatchColorMap = {
+    brass: '#B08A4E', walnut: '#5c3a21', black: '#1C1712', nickel: '#9e9e9e',
+    antique: '#8b6f47', wood: '#8A674A', gold: '#C7A05C', white: '#FFFFFF',
+    natural: '#e8dcc8', cream: '#f5f0e1', brown: '#8b5a2b', bronze: '#cd7f32'
+  };
+  document.querySelectorAll('[data-swatch]').forEach(function (el) {
+    const key = (el.getAttribute('data-swatch') || '').trim().toLowerCase().replace(/\s+/g, '');
+    if (swatchColorMap[key]) el.style.background = swatchColorMap[key];
+  });
+
+  /* 排序：切换时保留当前筛选 URL 参数（只替换 sort_by） */
+  const sortSelect = document.querySelector('[data-sort-select]');
+  if (sortSelect) {
+    sortSelect.addEventListener('change', function () {
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set('sort_by', this.value);
+        window.location.href = url.toString();
+      } catch (e) {
+        window.location.href = this.value;
+      }
+    });
+  }
+
+  /* Header 下拉菜单：hover / focus 时同步 aria-expanded */
+  document.querySelectorAll('.header__nav-item').forEach(function (item) {
+    const link = item.querySelector('.header__nav-link');
+    if (!link || !item.querySelector('.header__dropdown')) return;
+    function setExpanded(v) { link.setAttribute('aria-expanded', String(v)); }
+    item.addEventListener('mouseenter', function () { setExpanded(true); });
+    item.addEventListener('mouseleave', function () { setExpanded(false); });
+    item.addEventListener('focusin', function () { setExpanded(true); });
+    item.addEventListener('focusout', function (e) {
+      if (!item.contains(e.relatedTarget)) setExpanded(false);
+    });
+  });
 })();

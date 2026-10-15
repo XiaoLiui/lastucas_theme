@@ -28,20 +28,46 @@
 
   {% comment %} 注入登录状态，供购物车逻辑区分登录/未登录 {% endcomment %}
   <script>
-    window.SUNMORY = {
+    window.LASTUCAS = {
       customerLoggedIn: {% if customer %}true{% else %}false{% endif %},
       moneyFormat: {{ shop.money_format | json }},
       moneyWithCurrencyFormat: {{ shop.money_with_currency_format | json }}
     };
   </script>
 
-  {% comment %} 品牌自定义 CSS 变量（颜色/字体从主题设置里读） {% endcomment %}
+  {% comment %} 品牌自定义 CSS 变量（颜色/字体从主题设置里读，其余为品牌固定 Token） {% endcomment %}
   <style>
     :root {
       --color-bg: {{ settings.color_background }};
       --color-text: {{ settings.color_text }};
       --color-accent: {{ settings.color_accent }};
-      --font-body: {{ settings.font_body.family }};
+      --font-body: {{ settings.font_body.family }}, "Helvetica Neue", Arial, sans-serif;
+      --font-heading: {{ settings.font_heading.family }}, "Helvetica Neue", Arial, sans-serif;
+
+      --color-bg-alt: #292219;
+      --color-surface: #262019;
+      --color-surface-hover: #2E2A24;
+      --color-text-secondary: #B7AC9D;
+      --color-text-muted: #8E8478;
+      --color-text-inverse: #1C1712;
+      --color-text-inverse-secondary: #B7AC9D;
+      --color-ink-line: #3A3228;
+      --color-accent-strong: #B08A4E;
+      --color-accent-soft: rgba(199,160,92,0.14);
+      --color-accent-bright: #E0BE85;
+      --color-wood: #8A674A;
+      --color-wood-deep: #57412E;
+      --color-border: #3A3228;
+      --color-border-strong: #4A4033;
+      --color-ink: #0F0C09;
+      --color-ink-soft: #292219;
+      --color-success: #5FA37F;
+      --color-error: #D4735A;
+      --color-warning: #D69A5A;
+      --color-info: #6F97A8;
+      --color-sale: #C97B5F;
+      --color-soldout: #2E2A24;
+      --color-focus: #E0BE85;
     }
   </style>
 </head>
@@ -49,6 +75,7 @@
 <body class="template-{{ request.page_type | handle }}">
 
   <a class="skip-link visually-hidden" href="#MainContent">Skip to content</a>
+  <div class="visually-hidden" aria-live="polite" data-live-region></div>
 
   {% comment %} 全局公告条 + Header（所有页面通用） {% endcomment %}
   {% section 'announcement-bar' %}
@@ -61,13 +88,14 @@
   {% comment %} 全局 Footer（所有页面通用） {% endcomment %}
   {% section 'footer' %}
 
-  {% comment %} 全局 JS（一个文件：轮播、移动端菜单、购物车抽屉） {% endcomment %}
+  {% comment %} 全局 JS（焦点管理 + 轮播、移动端菜单、购物车抽屉） {% endcomment %}
+  <script src="{{ 'focus-trap.js' | asset_url }}" defer></script>
   <script src="{{ 'theme.js' | asset_url }}" defer></script>
 
   {% comment %} 搜索抽屉（全局，所有页面可用） {% endcomment %}
   <div class="search-drawer" data-search-drawer aria-hidden="true">
     <div class="search-drawer__overlay" data-search-close></div>
-    <aside class="search-drawer__panel" role="dialog" aria-label="Search">
+    <aside class="search-drawer__panel" role="dialog" aria-modal="true" aria-label="Search">
       <header class="search-drawer__header">
         <h2>Search</h2>
         <button type="button" class="search-drawer__close" data-search-close aria-label="Close">×</button>
@@ -108,7 +136,7 @@
   {% comment %} 购物车抽屉（全局，所有页面可用） {% endcomment %}
   <div class="cart-drawer" data-cart-drawer aria-hidden="true">
     <div class="cart-drawer__overlay" data-cart-close></div>
-    <aside class="cart-drawer__panel" role="dialog" aria-label="Shopping cart">
+    <aside class="cart-drawer__panel" role="dialog" aria-modal="true" aria-label="Shopping cart">
       <header class="cart-drawer__header">
         <h2 class="cart-drawer__title">Cart <span class="cart-drawer__count-badge cart-count" hidden>0</span></h2>
         <div class="cart-drawer__header-actions">
@@ -126,6 +154,7 @@
       </div>
 
       <footer class="cart-drawer__footer" data-cart-footer hidden>
+        {% render 'free-shipping-bar' %}
         <div class="cart-drawer__total-row">
           <span class="cart-drawer__total-label">Total</span>
           <strong class="cart-drawer__total-price" data-cart-subtotal></strong>

@@ -1,0 +1,26 @@
+{%- comment %}
+  Free Shipping Bar - 免运费进度条（购物车抽屉 + 购物车页共用）
+  阈值默认 $150（15000 分），业务可在调用处传 threshold 覆盖。
+  前端 theme.js 会读取 data-free-shipping 并在购物车变化时实时更新。
+{%- endcomment -%}
+{%- assign threshold = threshold | default: 15000 -%}
+{%- assign subtotal = cart.total_price | default: 0 -%}
+{%- if subtotal >= threshold -%}
+  {%- assign fs_complete = true -%}
+{%- else -%}
+  {%- assign fs_complete = false -%}
+{%- endif -%}
+{%- assign fs_pct = subtotal | times: 100 | divided_by: threshold -%}
+{%- if fs_pct > 100 -%}{%- assign fs_pct = 100 -%}{%- endif -%}
+<div class="free-shipping-bar{% if fs_complete %} is-complete{% endif %}" data-free-shipping data-threshold="{{ threshold }}">
+  <p class="free-shipping-bar__msg" data-fs-msg aria-live="polite">
+    {%- if fs_complete -%}
+      You've unlocked free shipping.
+    {%- else -%}
+      You're {{ threshold | minus: subtotal | money }} away from free shipping.
+    {%- endif -%}
+  </p>
+  <div class="free-shipping-bar__track" aria-hidden="true">
+    <div class="free-shipping-bar__fill" data-fs-fill style="width: {{ fs_pct }}%;"></div>
+  </div>
+</div>

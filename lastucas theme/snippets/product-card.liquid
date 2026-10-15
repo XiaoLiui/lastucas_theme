@@ -4,24 +4,50 @@
   规则：
   1. 折扣产品必须同时展示 折扣价 + 划线原价（compare at price）
   2. 只有一个变体时不显示变体标识（颜色圆点）
+  3. 快捷加购：单变体直接加购（data-quick-add）；多变体跳转 PDP 选款
 {% endcomment %}
 <div class="product-card">
-  <a href="{{ product.url }}" class="product-card__media">
-    {% if product.compare_at_price > product.price %}
-      <span class="product-card__badge product-card__badge--sale">Save {{ product.compare_at_price | minus: product.price | times: 100 | divided_by: product.compare_at_price | round }}%</span>
-    {% elsif product.available == false %}
-      <span class="product-card__badge product-card__badge--soldout">Sold out</span>
+  <div class="product-card__media">
+    <a href="{{ product.url }}" class="product-card__media-link" aria-label="{{ product.title | escape }}">
+      {% if product.compare_at_price > product.price %}
+        <span class="product-card__badge product-card__badge--sale">Save {{ product.compare_at_price | minus: product.price | times: 100 | divided_by: product.compare_at_price | round }}%</span>
+      {% elsif product.available == false %}
+        <span class="product-card__badge product-card__badge--soldout">Sold out</span>
+      {% endif %}
+      {% if product.featured_image %}
+        <img
+          src="{{ product.featured_image | image_url: width: 600 }}"
+          alt="{{ product.title | escape }}"
+          loading="lazy"
+        >
+      {% else %}
+        <div class="product-card__no-image">No image</div>
+      {% endif %}
+    </a>
+
+    {% comment %}
+      快捷加购（VI §7.4 / UX §2.3）：
+      - 单变体且有货：按钮直加（theme.js 监听 [data-quick-add]）
+      - 多变体：链接跳 PDP（无 data-variant-id，避免被 JS 拦截）
+      - 售罄：不渲染加购入口
+    {% endcomment %}
+    {% if product.available and product.variants.size == 1 %}
+      <button
+        type="button"
+        class="product-card__quick-add"
+        data-quick-add
+        data-variant-id="{{ product.selected_or_first_available_variant.id }}"
+        aria-label="Add {{ product.title | escape }} to cart"
+      >Add to Cart</button>
+    {% elsif product.available and product.variants.size > 1 %}
+      <a
+        href="{{ product.url }}"
+        class="product-card__quick-add"
+        aria-label="Choose options for {{ product.title | escape }}"
+      >Select Options</a>
     {% endif %}
-    {% if product.featured_image %}
-      <img
-        src="{{ product.featured_image | image_url: width: 600 }}"
-        alt="{{ product.title | escape }}"
-        loading="lazy"
-      >
-    {% else %}
-      <div class="product-card__no-image">No image</div>
-    {% endif %}
-  </a>
+  </div>
+
   <div class="product-card__info">
     <h3 class="product-card__title">
       <a href="{{ product.url }}">{{ product.title | escape }}</a>

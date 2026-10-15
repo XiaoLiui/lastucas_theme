@@ -67,7 +67,14 @@
       {% comment %} ============ 右：产品信息 ============ {% endcomment %}
       <div class="product-page__info">
 
+        {% render 'breadcrumbs', product: product %}
+
         <h1 class="product-page__title">{{ product.title | escape }}</h1>
+
+        {% comment %} 星级评分行（标题下方，预留接评价插件） {% endcomment %}
+        <div class="product-page__rating">
+          {% render 'rating-stars', score: section.settings.review_score, review_count: section.settings.review_count %}
+        </div>
 
         {% comment %} 价格：联动选中变体 {% endcomment %}
         <div class="product-page__price-row">
@@ -80,6 +87,11 @@
             <span class="product-page__save-badge" data-save-badge hidden></span>
           {% endif %}
         </div>
+
+        {% comment %} 短描述（价格块下方，可编辑） {% endcomment %}
+        {% if section.settings.short_description != blank %}
+          <p class="product-page__short-desc">{{ section.settings.short_description | escape | newline_to_br }}</p>
+        {% endif %}
 
         {% comment %} 变体选择：颜色用 swatch，其余用按钮；点击真正联动价格/图片/SKU {% endcomment %}
         {% unless product.has_only_default_variant %}
@@ -126,7 +138,7 @@
         {% endunless %}
 
         {% comment %} 数量 + 加购表单 {% endcomment %}
-        {% form 'product', product, data-product-form: '' %}
+        {% form 'product', product, id: 'product-form', data-product-form: '' %}
           <input type="hidden" name="id" value="{{ selected_variant.id }}" data-variant-id>
 
           <div class="product-page__quantity">
@@ -137,6 +149,9 @@
               <button type="button" class="product-page__qty-btn" data-qty-plus>+</button>
             </div>
           </div>
+
+          {% comment %} inline 错误提示（替代 alert，aria-live 播报） {% endcomment %}
+          <p class="product-page__add-error" data-add-error role="alert" aria-live="polite"></p>
 
           <div class="product-page__actions">
             <button type="submit" name="add" class="product-page__add-btn" data-add-to-cart
@@ -201,6 +216,9 @@
           </div>
         </div>
 
+        {% comment %} Description / Specs / Shipping 手风琴（信任行下方） {% endcomment %}
+        {% render 'product-accordion', product: product, shipping_text: section.settings.accordion_shipping %}
+
         {% comment %} 支付方式（信任保障卡下方，真实品牌图标） {% endcomment %}
         <div class="product-page__payment">
           <p class="product-page__payment-label">Easy and secure payment:</p>
@@ -231,40 +249,10 @@
 
       </div>
     </div>
-
-    {% comment %} 下方全宽：技术细节 + 描述（类似亚马逊 A+，横跨整页，非左右分栏） {% endcomment %}
-    <div class="product-page__lower">
-      <details class="product-page__details" open>
-        <summary class="product-page__details-summary">TECHNICAL DETAILS</summary>
-        <div class="product-page__specs">
-          {% if selected_variant.sku != blank %}
-            <span class="product-page__spec-label">MODEL</span>
-            <span class="product-page__spec-value" data-sku>{{ selected_variant.sku }}</span>
-          {% endif %}
-          {% if product.vendor != blank %}
-            <span class="product-page__spec-label">BRAND</span>
-            <span class="product-page__spec-value">{{ product.vendor | escape }}</span>
-          {% endif %}
-          {% if product.type != blank %}
-            <span class="product-page__spec-label">TYPE</span>
-            <span class="product-page__spec-value">{{ product.type | escape }}</span>
-          {% endif %}
-          {% if product.metafields.custom.specifications != blank %}
-            {% assign specs = product.metafields.custom.specifications.value %}
-            {% for spec in specs %}
-              <span class="product-page__spec-label">{{ spec[0] | upcase | escape }}</span>
-              <span class="product-page__spec-value">{{ spec[1] | escape }}</span>
-            {% endfor %}
-          {% endif %}
-        </div>
-      </details>
-
-      {% comment %} 描述 {% endcomment %}
-      {% if product.description != blank %}
-        <div class="product-page__description">{{ product.description }}</div>
-      {% endif %}
-    </div>
   </div>
+
+  {% comment %} 移动端吸底加购条（≤768px，滚动越过主 CTA 后出现） {% endcomment %}
+  {% render 'sticky-add-to-cart', product: product, form_id: 'product-form' %}
 
   {% comment %} 变体数据（供前端联动价格/SKU/可用性）{% endcomment %}
   <script type="application/json" data-product-variants>
@@ -334,6 +322,30 @@
       "id": "trust_card4",
       "label": "保障卡 4",
       "default": "2-Year Warranty"
+    },
+    {
+      "type": "text",
+      "id": "review_score",
+      "label": "星级评分",
+      "default": "4.8"
+    },
+    {
+      "type": "text",
+      "id": "review_count",
+      "label": "评价数文案",
+      "default": "1,234 reviews"
+    },
+    {
+      "type": "textarea",
+      "id": "short_description",
+      "label": "短描述（价格块下方）",
+      "default": "A warm, sculptural floor lamp in solid walnut and brushed brass, cast in 2700K light."
+    },
+    {
+      "type": "textarea",
+      "id": "accordion_shipping",
+      "label": "Shipping & Returns 手风琴文案",
+      "default": "Free U.S. shipping on orders over $150. 30-day easy returns. Ships from our U.S. warehouse within 1–2 business days."
     }
   ]
 }
