@@ -1,0 +1,250 @@
+{% comment %}
+  ============================================================
+  A+ Demo Template - 产品页 A+ 完整版式（静态展示版）
+  ============================================================
+  用途：将确认后的 A+ 版式以固定内容 + 占位图的形式安装进产品页，
+        便于预览整体效果。暂不接入 Shopify 元数据。
+
+  版块顺序：
+  ① 图标特性条        ② 图文 + ✓列表        ③ 使用场景（静态）
+  ④ Order Protection  ⑤ 详情（标题+3组图文）  ⑥ Specifications
+  ⑦ Customer Highlights 买家秀                ⑧ FAQ
+
+  说明：
+  - 图片位置全部为占位符（.pfb__ph），接入真实数据后由元数据图片替换
+  - 恢复元数据版：在 templates/product.json 的 order 数组中
+    将 "aplus-demo" 换回 "order-protection" / "usage-scenes" /
+    "metafield-sections" / "features" 即可
+  ============================================================
+{% endcomment %}
+
+<section class="pfb pfb--metafield aplus-demo" data-aplus-demo>
+  <div class="container">
+
+    {%- comment %} ============ ① 图标特性条 ============ {% endcomment -%}
+    <div class="pfb__icons">
+      <div class="pfb__icons-grid">
+        <div class="pfb__icon-item">
+          <span class="pfb__icon">
+            <svg viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="22" cy="22" r="8"/><path d="M22 6v5M22 33v5M6 22h5M33 22h5M10.7 10.7l3.5 3.5M29.8 29.8l3.5 3.5M33.3 10.7l-3.5 3.5M14.2 29.8l-3.5 3.5"/></svg>
+          </span>
+          <span class="pfb__icon-title">36W / 3000 Lumens</span>
+          <span class="pfb__icon-text">A warm, room-filling glow that replaces your ceiling light.</span>
+        </div>
+        <div class="pfb__icon-item">
+          <span class="pfb__icon">
+            <svg viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 26a10 10 0 1 1 20 0"/><path d="M22 10V6"/><path d="M8 30h28"/><path d="M14 34h16M17 38h10"/></svg>
+          </span>
+          <span class="pfb__icon-title">3 Color Temperatures</span>
+          <span class="pfb__icon-text">Warm 3000K, natural 4500K and cool 6000K in one lamp.</span>
+        </div>
+        <div class="pfb__icon-item">
+          <span class="pfb__icon">
+            <svg viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 36V14"/><path d="M22 14l-8-5M22 14l8-5"/><circle cx="14" cy="9" r="3"/><circle cx="30" cy="9" r="3"/><path d="M16 36h12M18 40h8"/></svg>
+          </span>
+          <span class="pfb__icon-title">Rotatable Light Heads</span>
+          <span class="pfb__icon-text">Multi-directional shades light exactly where you need.</span>
+        </div>
+        <div class="pfb__icon-item">
+          <span class="pfb__icon">
+            <svg viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="6" width="24" height="32" rx="4"/><circle cx="22" cy="22" r="4"/><path d="M19 31h6"/></svg>
+          </span>
+          <span class="pfb__icon-title">Remote, Touch &amp; App</span>
+          <span class="pfb__icon-text">Control from the sofa, the bed, or across the room.</span>
+        </div>
+      </div>
+    </div>
+
+    {%- comment %} ============ ② 图文 + 勾选列表（图右） ============ {% endcomment -%}
+    <div class="pfb__media-text pfb__media-text--flip">
+      <div class="pfb__media-text-media">
+        <div class="pfb__ph">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.8"/><path d="M21 15l-5-5L5 21"/></svg>
+          <span>Product lifestyle image · 900 × 1100</span>
+        </div>
+      </div>
+      <div class="pfb__media-text-body">
+        <h3 class="pfb__title">Flexible Lighting for Living Rooms, Bedrooms, and Offices</h3>
+        <div class="pfb__text">
+          <p>The LASTUCAS floor lamp is built for rooms that need layers of light — bright overhead when you are working, soft ambient glow when you are winding down.</p>
+          <ul>
+            <li>36W energy-efficient LED with 25,000-hour lifespan</li>
+            <li>3 CCT (3000K–6000K) with stepless dimming</li>
+            <li>10%–100% dimmable, flicker-free at every level</li>
+            <li>Tailored light for reading, relaxing, or working</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    {%- comment %} ============ ③ 使用场景（静态演示，Living Room / Work Room） ============ {% endcomment -%}
+    <div class="demo-scenes">
+      <h2 class="usage-scenes__heading">Designed for Every Space</h2>
+      <div class="usage-scenes__tabs">
+        <button type="button" class="usage-scenes__tab is-active">Living Room</button>
+        <button type="button" class="usage-scenes__tab">Work Room</button>
+      </div>
+      <div class="pfb__media-frame">
+        <div class="pfb__ph">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.8"/><path d="M21 15l-5-5L5 21"/></svg>
+          <span>Scene image · 1600 × 900</span>
+        </div>
+        <button type="button" class="usage-scenes__arrow usage-scenes__arrow--prev" aria-label="Previous scene">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <button type="button" class="usage-scenes__arrow usage-scenes__arrow--next" aria-label="Next scene">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
+        </button>
+      </div>
+    </div>
+
+    {%- comment %} ============ ④ Order Protection ============ {% endcomment -%}
+    <div class="order-protection">
+      <h2 class="order-protection__heading">Order Direct. Get More Protection.</h2>
+      <p class="order-protection__sub">When you purchase from LASTUCAS.com, you're getting more than just a lamp. You're getting peace of mind and premium service.</p>
+      <div class="order-protection__grid">
+        <div class="order-protection__card">
+          <span class="order-protection__icon"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1-5h16l1 5"/><path d="M4 9v11h16V9"/><path d="M9 20v-6h6v6"/></svg></span>
+          <span class="order-protection__title">Official LASTUCAS Store</span>
+          <span class="order-protection__text">Authentic products, guaranteed</span>
+        </div>
+        <div class="order-protection__card">
+          <span class="order-protection__icon"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.4-3 8.4-7 10-4-1.6-7-5.6-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg></span>
+          <span class="order-protection__title">2-Year Warranty</span>
+          <span class="order-protection__text">Official LASTUCAS.com coverage</span>
+        </div>
+        <div class="order-protection__card">
+          <span class="order-protection__icon"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4"/><circle cx="12" cy="16" r="0.5" fill="currentColor"/></svg></span>
+          <span class="order-protection__title">Direct Support</span>
+          <span class="order-protection__text">Priority customer service</span>
+        </div>
+        <div class="order-protection__card">
+          <span class="order-protection__icon"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></span>
+          <span class="order-protection__title">Fast Processing</span>
+          <span class="order-protection__text">Ships within 24 hours</span>
+        </div>
+      </div>
+    </div>
+
+    {%- comment %} ============ ⑤ 详情：居中标题 + 3 组交替图文 ============ {% endcomment -%}
+    <h2 class="pfb__heading">Thoughtfully Designed Details</h2>
+
+    <div class="pfb__media-text pfb__media-text--flip">
+      <div class="pfb__media-text-media">
+        <div class="pfb__ph">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.8"/><path d="M21 15l-5-5L5 21"/></svg>
+          <span>Detail image · 900 × 1100</span>
+        </div>
+      </div>
+      <div class="pfb__media-text-body">
+        <h3 class="pfb__title">360-Degree Rotation and 180-Degree Tilt</h3>
+        <div class="pfb__text">
+          <p>The dual-joint head design gives you directional flexibility — without moving the lamp. Aim light at your book, your desk, or the wall behind your sofa in seconds.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="pfb__media-text">
+      <div class="pfb__media-text-media">
+        <div class="pfb__ph">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.8"/><path d="M21 15l-5-5L5 21"/></svg>
+          <span>Detail image · 900 × 1100</span>
+        </div>
+      </div>
+      <div class="pfb__media-text-body">
+        <h3 class="pfb__title">Stable, Eye-Friendly LED Output</h3>
+        <div class="pfb__text">
+          <p>The integrated LED light is designed for stable, non-flickering illumination. Multiple brightness and color temperature settings let you adjust your lighting to whatever you need, fatigue-free and always comfortable.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="pfb__media-text pfb__media-text--flip">
+      <div class="pfb__media-text-media">
+        <div class="pfb__ph">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.8"/><path d="M21 15l-5-5L5 21"/></svg>
+          <span>Detail image · 900 × 1100</span>
+        </div>
+      </div>
+      <div class="pfb__media-text-body">
+        <h3 class="pfb__title">Weighted Base and Fast Assembly</h3>
+        <div class="pfb__text">
+          <p>The 4.5-pound weighted base and 4.6-inch diameter keep the lamp steady on any floor. Tool-free assembly takes about 5 minutes — unbox, screw, plug in, glow.</p>
+        </div>
+      </div>
+    </div>
+
+    {%- comment %} ============ ⑥ Specifications ============ {% endcomment -%}
+    <div class="pfb__specs">
+      <h2 class="pfb__heading">Specifications</h2>
+      <div class="pfb__specs-grid">
+        <div class="pfb__spec-row"><span class="pfb__spec-key">Power</span><span class="pfb__spec-val">36W LED, 3000 Lumens</span></div>
+        <div class="pfb__spec-row"><span class="pfb__spec-key">Voltage</span><span class="pfb__spec-val">AC 110V (US Plug)</span></div>
+        <div class="pfb__spec-row"><span class="pfb__spec-key">Color Temperature</span><span class="pfb__spec-val">3000K / 4500K / 6000K</span></div>
+        <div class="pfb__spec-row"><span class="pfb__spec-key">Dimming</span><span class="pfb__spec-val">10% – 100% Stepless</span></div>
+        <div class="pfb__spec-row"><span class="pfb__spec-key">Control</span><span class="pfb__spec-val">Remote · Touch · App</span></div>
+        <div class="pfb__spec-row"><span class="pfb__spec-key">Lifespan</span><span class="pfb__spec-val">25,000 Hours</span></div>
+        <div class="pfb__spec-row"><span class="pfb__spec-key">Material</span><span class="pfb__spec-val">Metal + Solid Wood</span></div>
+        <div class="pfb__spec-row"><span class="pfb__spec-key">Warranty</span><span class="pfb__spec-val">2 Years</span></div>
+      </div>
+    </div>
+
+    {%- comment %} ============ ⑦ Customer Highlights 买家秀 ============ {% endcomment -%}
+    <div class="pfb__reviews">
+      <h2 class="pfb__heading">Customer Highlights</h2>
+      <p class="reviews__sub">Real-life setups from homes using LASTUCAS floor lamps for brighter, more flexible room lighting.</p>
+      <div class="reviews-grid">
+        {%- assign demo_names = 'Olivia Carter|Ethan Brooks|Natalie Reed|Marcus Hill|Lauren Bennett|Daniel Foster' | split: '|' -%}
+        {%- assign demo_reviews = 'Versatile lighting for any room. I use these in my music studio, giving me great lighting and even more atmosphere.|Easy to put together and amazing as a main light in a room with a small ceiling fixture. Super bright and so flexible — I love the option of turning off one or two lights, or choosing any combination.|Very happy with this lamp. Easy to put together, multiple lighting options, super bright. We love that the lights brighten up our living room perfectly.|This lamp fits my needs exactly. I wanted a floor lamp that would not overwhelm my sitting area while still giving me flexible light and intensity levels.|Perfect lamp for my home office. I needed more light in my workspace without overwhelming the room. Three heads each working independently, and the remote is a cool bonus.|I love this floor lamp! The three lights provide excellent brightness and make my living room feel warmer and more modern. Fits perfectly next to my sofa.' | split: '|' -%}
+        {%- for i in (0..5) -%}
+          <div class="review-card">
+            <div class="review-card__media">
+              <div class="pfb__ph">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.8"/><path d="M21 15l-5-5L5 21"/></svg>
+                <span>Review photo · 1:1</span>
+              </div>
+            </div>
+            <div class="review-card__stars"><span class="is-on">★</span><span class="is-on">★</span><span class="is-on">★</span><span class="is-on">★</span><span class="is-on">★</span></div>
+            <div class="review-card__text">{{ demo_reviews[i] }}</div>
+            <span class="review-card__name">{{ demo_names[i] }}</span>
+          </div>
+        {%- endfor -%}
+      </div>
+    </div>
+
+    {%- comment %} ============ ⑧ FAQ ============ {% endcomment -%}
+    <div class="pfb__faq">
+      <h2 class="pfb__heading">Frequently Asked Questions</h2>
+      <details class="pfb__faq-item">
+        <summary class="pfb__faq-q">Can the top light and reading light be used separately?</summary>
+        <div class="pfb__faq-a">Yes. Each of the three light heads can be switched on and off independently — use just the reading light, just the ambient glow, or any combination that suits the moment.</div>
+      </details>
+      <details class="pfb__faq-item">
+        <summary class="pfb__faq-q">Does it support dimming and color temperature adjustment?</summary>
+        <div class="pfb__faq-a">Yes. The lamp offers 10%–100% stepless dimming and three color temperatures (3000K warm / 4500K natural / 6000K cool), adjustable via the remote, the touch panel, or the app.</div>
+      </details>
+      <details class="pfb__faq-item">
+        <summary class="pfb__faq-q">Is it controlled by remote?</summary>
+        <div class="pfb__faq-a">Yes. The included remote controls power, brightness, and color temperature. You can also control the lamp with the built-in touch panel or the smartphone app — whichever is closest.</div>
+      </details>
+    </div>
+
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Aplus Demo",
+  "tag": "section",
+  "class": "section-aplus-demo",
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "A+ 静态展示模板（占位图版）：内容与图片均固定，用于预览整体版式。接入元数据后，请在模板 order 数组中换回 order-protection / usage-scenes / metafield-sections。"
+    }
+  ],
+  "presets": [
+    { "name": "Aplus Demo" }
+  ]
+}
+{% endschema %}

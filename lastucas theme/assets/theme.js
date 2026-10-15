@@ -200,6 +200,7 @@
 
   let searchTrapCleanup = null;
   function openSearchDrawer() {
+    if (searchDrawer.classList.contains('is-open')) return; // 防重入：重复打开会导致 inert 计数泄漏
     searchDrawer.classList.add('is-open');
     searchDrawer.setAttribute('aria-hidden', 'false');
     if (window.LASTUCAS) {
@@ -210,6 +211,7 @@
   }
 
   function closeSearchDrawer() {
+    if (!searchDrawer.classList.contains('is-open')) return; // 未打开时忽略，防止计数错乱
     searchDrawer.classList.remove('is-open');
     searchDrawer.setAttribute('aria-hidden', 'true');
     if (window.LASTUCAS) window.LASTUCAS.setPageInert(false);
@@ -403,6 +405,7 @@
   }
 
   function openDrawer() {
+    if (drawer.classList.contains('is-open')) return; // 防重入：重复打开会导致 inert 计数泄漏
     drawer.classList.add('is-open');
     drawer.setAttribute('aria-hidden', 'false');
     if (window.LASTUCAS) {
@@ -412,6 +415,7 @@
     loadCart();
   }
   function closeDrawer() {
+    if (!drawer.classList.contains('is-open')) return; // 未打开时忽略，防止计数错乱
     drawer.classList.remove('is-open');
     drawer.setAttribute('aria-hidden', 'true');
     if (window.LASTUCAS) window.LASTUCAS.setPageInert(false);
@@ -1044,14 +1048,62 @@
     const galleryPrev = productPage.querySelector('[data-gallery-prev]');
     const galleryNext = productPage.querySelector('[data-gallery-next]');
     const zoomBtn = productPage.querySelector('[data-zoom-open]');
-    const lightbox = productPage.querySelector('[data-lightbox]');
-    const lightboxImg = productPage.querySelector('[data-lightbox-img]');
-    const lightboxPrev = productPage.querySelector('[data-lightbox-prev]');
-    const lightboxNext = productPage.querySelector('[data-lightbox-next]');
-    const lightboxClose = productPage.querySelector('[data-lightbox-close]');
+    // Lightbox 标记位于 layout/theme.liquid（main 之外），需从 document 查询
+    const lightbox = document.querySelector('[data-lightbox]');
+    const lightboxImg = document.querySelector('[data-lightbox-img]');
+    const lightboxPrev = document.querySelector('[data-lightbox-prev]');
+    const lightboxNext = document.querySelector('[data-lightbox-next]');
+    const lightboxClose = document.querySelector('[data-lightbox-close]');
+    const lightboxThumbsWrap = document.querySelector('[data-lightbox-thumbs]');
 
     let currentSlide = 0;
     const slideCount = slides.length;
+
+    // ===== 无限循环轮播 =====
+    // 轨道结构变为 [末张克隆, 0, 1, ..., N-1, 首张克隆]，真实索引 idx 对应轨道位置 idx + 1
+    let posVersion = 0;
+    const loopEnabled = !!(track && slideCount > 1);
+    if (loopEnabled) {
+      const lastClone = slides[slideCount - 1].cloneNode(true);
+      const firstClone = slides[0].cloneNode(true);
+      [lastClone, firstClone].forEach(function (c) {
+        c.setAttribute('data-clone', 'true');
+        const ci = c.querySelector('img');
+        if (ci) { ci.setAttribute('loading', 'eager'); }
+      });
+      track.insertBefore(lastClone, slides[0]);
+      track.appendChild(firstClone);
+    }
+
+    // 直接设定轨道位置；animate=false 时禁用过渡、瞬间跳转
+    function setTrackPos(pos, animate) {
+      if (!track) return;
+      if (!animate) track.classList.add('is-snapping');
+      track.style.transform = 'translateX(-' + (pos * 100) + '%)';
+      if (!animate) {
+        void track.offsetWidth; // 强制重排，确保无过渡跳转立即生效
+        track.classList.remove('is-snapping');
+      }
+    }
+
+    // 轨道过渡结束后执行回调（带兜底超时与打断保护）
+    function afterTrackTransition(cb) {
+      if (!track) { cb(); return; }
+      let done = false;
+      function finish() {
+        if (done) return;
+        done = true;
+        track.removeEventListener('transitionend', onEnd);
+        cb();
+      }
+      function onEnd(e) {
+        if (e.target === track && e.propertyName === 'transform') finish();
+      }
+      track.addEventListener('transitionend', onEnd);
+      setTimeout(finish, 700);
+    }
+
+    if (loopEnabled) setTrackPos(1, false); // 确保初始停在第 1 张真实图
 
     // 缩略图列高度同步主图高度（遮罩/滚动与主图对齐）——仅桌面端竖排生效
     function syncThumbsHeight() {
@@ -1085,10 +1137,28 @@
 
     function goToIndex(idx) {
       if (slideCount === 0) return;
-      if (idx < 0) idx = slideCount - 1;
-      if (idx >= slideCount) idx = 0;
+      let wrap = '';
+      if (idx < 0) { idx = slideCount - 1; wrap = 'backward'; }
+      if (idx >= slideCount) { idx = 0; wrap = 'forward'; }
       currentSlide = idx;
-      if (track) track.style.transform = 'translateX(-' + (idx * 100) + '%)';
+      const v = ++posVersion;
+      if (loopEnabled && wrap === 'forward') {
+        // 末张 → 继续向左滑入首张克隆，到位后无感归位
+        setTrackPos(slideCount + 1, true);
+        afterTrackTransition(function () {
+          if (v !== posVersion) return; // 已被新的切换打断
+          setTrackPos(1, false);
+        });
+      } else if (loopEnabled && wrap === 'backward') {
+        // 首张 → 向右滑入末张克隆，到位后无感归位
+        setTrackPos(0, true);
+        afterTrackTransition(function () {
+          if (v !== posVersion) return;
+          setTrackPos(slideCount, false);
+        });
+      } else {
+        setTrackPos(idx + (loopEnabled ? 1 : 0), true);
+      }
       thumbBtns.forEach(function (t) {
         t.classList.toggle('is-active', Number(t.dataset.thumbIndex) === idx);
       });
@@ -1135,26 +1205,140 @@
       }, { passive: true });
     }
 
+    // 亚马逊式悬停放大（PC）：图上取景框 + 右侧弹出放大面板
+    const zoomLens = productPage.querySelector('[data-zoom-lens]');
+    const zoomPanel = productPage.querySelector('[data-zoom-panel]');
+    if (mainImageWrap && zoomLens && zoomPanel &&
+        window.matchMedia('(hover: hover)').matches && window.innerWidth >= 1024) {
+      const PANEL_W = 400, PANEL_H = 500, ZOOM = 2.5;
+      const LENS_W = PANEL_W / ZOOM, LENS_H = PANEL_H / ZOOM;
+
+      zoomLens.style.width = LENS_W + 'px';
+      zoomLens.style.height = LENS_H + 'px';
+
+      function zoomImg() {
+        // 画廊用轨道位移切换，slide 无 is-active 类，直接用当前索引取图
+        return slides[currentSlide] ? slides[currentSlide].querySelector('img') : null;
+      }
+
+      // 计算图片内容实际显示区域（object-fit: contain 后的矩形，相对主图容器）
+      function measure() {
+        const img = zoomImg();
+        if (!img || !img.naturalWidth || !img.naturalHeight) return null;
+        const box = mainImageWrap.getBoundingClientRect();
+        if (!box.width || !box.height) return null;
+        const scale = Math.min(box.width / img.naturalWidth, box.height / img.naturalHeight);
+        const dw = img.naturalWidth * scale;
+        const dh = img.naturalHeight * scale;
+        return { x0: box.left, y0: box.top, dw: dw, dh: dh, ox: (box.width - dw) / 2, oy: (box.height - dh) / 2, img: img };
+      }
+
+      function hideZoom() {
+        mainImageWrap.classList.remove('is-zooming');
+        zoomPanel.classList.remove('is-active');
+      }
+
+      mainImageWrap.addEventListener('mousemove', function (e) {
+        // 悬停在箭头/放大按钮上时不触发
+        if (e.target.closest('button')) { hideZoom(); return; }
+        const m = measure();
+        if (!m) return;
+
+        const bx = e.clientX - m.x0;   // 光标在容器内坐标
+        const by = e.clientY - m.y0;
+        const cx = Math.max(0, Math.min(m.dw, bx - m.ox));  // 光标在图片内容内坐标
+        const cy = Math.max(0, Math.min(m.dh, by - m.oy));
+
+        // 取景框：跟随光标中心，限制在图片内容区内
+        const lx = Math.max(m.ox, Math.min(m.ox + m.dw - LENS_W, bx - LENS_W / 2));
+        const ly = Math.max(m.oy, Math.min(m.oy + m.dh - LENS_H, by - LENS_H / 2));
+        zoomLens.style.left = lx + 'px';
+        zoomLens.style.top = ly + 'px';
+
+        // 面板：高清图作背景，按 ZOOM 倍放大，光标位置居中显示
+        const bgW = m.dw * ZOOM, bgH = m.dh * ZOOM;
+        let px = -(cx * ZOOM - PANEL_W / 2);
+        let py = -(cy * ZOOM - PANEL_H / 2);
+        px = Math.min(0, Math.max(PANEL_W - bgW, px));
+        py = Math.min(0, Math.max(PANEL_H - bgH, py));
+        const zoomUrl = m.img.getAttribute('data-zoom') || m.img.src;
+        if (zoomPanel.dataset.bg !== zoomUrl) {
+          zoomPanel.style.backgroundImage = 'url("' + zoomUrl + '")';
+          zoomPanel.dataset.bg = zoomUrl;
+        }
+        zoomPanel.style.backgroundSize = bgW + 'px ' + bgH + 'px';
+        zoomPanel.style.backgroundPosition = px + 'px ' + py + 'px';
+
+        mainImageWrap.classList.add('is-zooming');
+        zoomPanel.classList.add('is-active');
+      });
+
+      mainImageWrap.addEventListener('mouseleave', hideZoom);
+      // 鼠标悬停时预载当前图的高清版，避免首次弹出面板时背景空白
+      mainImageWrap.addEventListener('mouseenter', function () {
+        const img = zoomImg();
+        if (img) {
+          const u = img.getAttribute('data-zoom');
+          if (u) { const pre = new Image(); pre.src = u; }
+        }
+      });
+    }
+
     // 放大预览 lightbox
+    const lightboxThumbs = [];
+
+    // 构建底部缩略图条（素材复用车库 900px 图，浏览器缓存内不重复下载）
+    if (lightboxThumbsWrap && slides.length > 1) {
+      slides.forEach(function (s, i) {
+        const sImg = s.querySelector('img');
+        if (!sImg) return;
+        const thumb = document.createElement('button');
+        thumb.type = 'button';
+        thumb.className = 'product-page__lightbox-thumb';
+        thumb.setAttribute('aria-label', 'View image ' + (i + 1));
+        const ti = document.createElement('img');
+        ti.src = sImg.getAttribute('data-src') || sImg.src;
+        ti.alt = '';
+        ti.loading = 'lazy';
+        thumb.appendChild(ti);
+        thumb.addEventListener('click', function () {
+          goToIndex(i);
+          lightboxShow(i);
+        });
+        lightboxThumbsWrap.appendChild(thumb);
+        lightboxThumbs.push(thumb);
+      });
+    }
+
     let lightboxTrapCleanup = null;
     function lightboxShow(idx) {
       const img = slides[idx] ? slides[idx].querySelector('img') : null;
       const src = img ? (img.getAttribute('data-zoom') || img.getAttribute('data-src') || img.src) : '';
       if (lightboxImg) lightboxImg.src = src;
+      // 同步底部缩略图激活态并滚动到可见
+      lightboxThumbs.forEach(function (t, i) {
+        t.classList.toggle('is-active', i === idx);
+      });
+      if (lightboxThumbs[idx] && lightboxThumbs[idx].scrollIntoView) {
+        lightboxThumbs[idx].scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+      }
+      // 关键：仅在「从关闭到打开」时加 inert / 焦点陷阱。
+      // 已打开时重复调用（切换图片）只更新内容，不再增加计数，
+      // 否则关闭后计数 >0，背景仍被 inert 锁死，无法再点击页面。
+      const wasHidden = !lightbox || lightbox.hidden;
       if (lightbox) {
         lightbox.hidden = false;
         lightbox.setAttribute('aria-hidden', 'false');
       }
-      if (window.LASTUCAS) {
+      if (window.LASTUCAS && wasHidden) {
         window.LASTUCAS.setPageInert(true);
         lightboxTrapCleanup = window.LASTUCAS.trapFocus(lightbox);
       }
     }
     function lightboxHide() {
-      if (lightbox) {
-        lightbox.hidden = true;
-        lightbox.setAttribute('aria-hidden', 'true');
-      }
+      if (!lightbox || lightbox.hidden) return; // 未打开时忽略，防止计数错乱
+      lightbox.hidden = true;
+      lightbox.setAttribute('aria-hidden', 'true');
       if (window.LASTUCAS) window.LASTUCAS.setPageInert(false);
       if (lightboxTrapCleanup) { lightboxTrapCleanup(); lightboxTrapCleanup = null; }
     }

@@ -16,6 +16,7 @@
 | `content_block` | 同上（单数兜底） | 同上 | 同上 |
 | `specifications` | JSON | `{"参数名": "参数值", ...}` | Specifications 双栏表 |
 | `faq` | Metaobject 列表（`faq_item`） | 条目：`question`(文本) / `answer`(富文本) | FAQ 折叠区 |
+| `reviews` | Metaobject 列表（`review_item`） | 条目：`image`(文件) / `rating`(整数1-5) / `text`(多行文本) / `author`(文本) | Customer Highlights 买家秀（A+ 底部） |
 | `order_protection` | 布尔值 | `true` / `false` | 直购保障区开关 |
 | `usage_scenes` | Metaobject 列表（`usage_scene`） | 条目：`name` / `image` / `description` | 使用场景切换 |
 
@@ -69,6 +70,15 @@
 | 问题 | `question` | 单行文本 |
 | 回答 | `answer` | 富文本 |
 
+#### 定义 D：`review_item`（买家秀单项）
+
+| 字段名 | 字段 key | 类型 |
+|--------|----------|------|
+| 买家秀图片 | `image` | 文件（图片） |
+| 评分 | `rating` | 整数（1-5，不填默认 5） |
+| 评价内容 | `text` | 多行文本 |
+| 评价人 | `author` | 单行文本 |
+
 ### 2. 产品元字段（设置 → 自定义数据 → 产品）
 
 | 元字段名称 | 命名空间.键 | 类型 |
@@ -76,6 +86,7 @@
 | 特性图标条 | `custom.icon_features` | Metaobject 引用 → 列表，指向 `icon_feature` |
 | 长内容图文 | `custom.content_blocks` | Metaobject 引用 → 列表，指向 `content_block` |
 | FAQ | `custom.faq` | Metaobject 引用 → 列表，指向 `faq_item` |
+| 买家秀 | `custom.reviews` | Metaobject 引用 → 列表，指向 `review_item` |
 | 直购保障区开关 | `custom.order_protection` | 真假值（布尔）。true 时显示 LASTUCAS 品牌保障区（sections/order-protection.liquid，内容写死） |
 
 > 规格表 `custom.specifications` 主题原本已有（`main-product.liquid` 在用它），直接复用，无需新建。
@@ -180,7 +191,7 @@ Metaobject 条目的字段通过 `.字段key.value` 访问：
 
 ## 七、待办 / 可扩展
 
-- [ ] 后台创建 3 个 Metaobject 定义（`icon_feature` / `content_block` / `faq_item`）与 3 个产品元字段
+- [ ] 后台创建 4 个 Metaobject 定义（`icon_feature` / `content_block` / `faq_item` / `review_item`）与 4 个产品元字段
 - [ ] 给核心 ASIN 对应产品填写长内容数据
 - [ ] （可选）用 Admin API 自动创建 metafield 定义，替代手动后台配置
 - [ ] （可选）把场景图集也接入 metafield，实现产品级场景切换

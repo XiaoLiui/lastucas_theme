@@ -6,19 +6,19 @@
         "type": "color",
         "id": "color_background",
         "label": "Background color",
-        "default": "#1C1712"
+        "default": "#FBF8F3"
       },
       {
         "type": "color",
         "id": "color_text",
         "label": "Text color",
-        "default": "#F3EEE5"
+        "default": "#2E2620"
       },
       {
         "type": "color",
         "id": "color_accent",
         "label": "Accent color",
-        "default": "#C7A05C"
+        "default": "#B08A4E"
       },
       {
         "type": "font_picker",
@@ -42,8 +42,16 @@
   {
     "name": "Social Media",
     "settings": [
-      { "type": "url", "id": "social_instagram", "label": "Instagram URL" },
-      { "type": "url", "id": "social_tiktok", "label": "TikTok URL" }
+      {
+        "type": "url",
+        "id": "social_instagram",
+        "label": "Instagram URL"
+      },
+      {
+        "type": "url",
+        "id": "social_tiktok",
+        "label": "TikTok URL"
+      }
     ]
   }
 ]

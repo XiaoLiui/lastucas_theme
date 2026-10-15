@@ -35,39 +35,40 @@
     };
   </script>
 
-  {% comment %} 品牌自定义 CSS 变量（颜色/字体从主题设置里读，其余为品牌固定 Token） {% endcomment %}
+  {% comment %} 品牌自定义 CSS 变量（颜色/字体从主题设置里读，其余为品牌固定 Token）
+     Warm Minimalism 浅色体系 v3.0（2026-10）：暖米白底 + 香槟金点睛，舒适不压抑 {% endcomment %}
   <style>
     :root {
-      --color-bg: {{ settings.color_background }};
-      --color-text: {{ settings.color_text }};
-      --color-accent: {{ settings.color_accent }};
+      --color-bg: {{ settings.color_background | default: '#FBF8F3' }};
+      --color-text: {{ settings.color_text | default: '#2E2620' }};
+      --color-accent: {{ settings.color_accent | default: '#B08A4E' }};
       --font-body: {{ settings.font_body.family }}, "Helvetica Neue", Arial, sans-serif;
       --font-heading: {{ settings.font_heading.family }}, "Helvetica Neue", Arial, sans-serif;
 
-      --color-bg-alt: #292219;
-      --color-surface: #262019;
-      --color-surface-hover: #2E2A24;
-      --color-text-secondary: #B7AC9D;
-      --color-text-muted: #8E8478;
-      --color-text-inverse: #1C1712;
-      --color-text-inverse-secondary: #B7AC9D;
-      --color-ink-line: #3A3228;
-      --color-accent-strong: #B08A4E;
-      --color-accent-soft: rgba(199,160,92,0.14);
-      --color-accent-bright: #E0BE85;
+      --color-bg-alt: #F4EDE2;
+      --color-surface: #FFFFFF;
+      --color-surface-hover: #F7F1E8;
+      --color-text-secondary: #6E6154;
+      --color-text-muted: #9C8F7F;
+      --color-text-inverse: #FBF8F3;
+      --color-text-inverse-secondary: #6E6154;
+      --color-ink-line: #EAE1D2;
+      --color-accent-strong: #96733C;
+      --color-accent-soft: rgba(176,138,78,0.12);
+      --color-accent-bright: #C7A05C;
       --color-wood: #8A674A;
       --color-wood-deep: #57412E;
-      --color-border: #3A3228;
-      --color-border-strong: #4A4033;
-      --color-ink: #0F0C09;
-      --color-ink-soft: #292219;
-      --color-success: #5FA37F;
-      --color-error: #D4735A;
-      --color-warning: #D69A5A;
-      --color-info: #6F97A8;
-      --color-sale: #C97B5F;
-      --color-soldout: #2E2A24;
-      --color-focus: #E0BE85;
+      --color-border: #E8E0D1;
+      --color-border-strong: #D8CCB8;
+      --color-ink: #241D15;
+      --color-ink-soft: #F7F1E8;
+      --color-success: #4E8B68;
+      --color-error: #B85C43;
+      --color-warning: #B07A3C;
+      --color-info: #5C7F8F;
+      --color-sale: #C05A3E;
+      --color-soldout: #EDE6DA;
+      --color-focus: #B08A4E;
     }
   </style>
 </head>
@@ -196,6 +197,23 @@
         <a href="{{ routes.all_products_collection_url }}" class="cart-drawer__rec-more">Shop all products →</a>
       </div>
     </aside>
+  </div>
+
+  {% comment %} 图片放大浏览 Lightbox（全局；必须位于 main 之外，否则会随 main 被 inert 禁用） {% endcomment %}
+  <div class="product-page__lightbox" data-lightbox aria-hidden="true" hidden>
+    <button type="button" class="product-page__lightbox-close" data-lightbox-close aria-label="Close">
+      <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="product-page__lightbox-stage">
+      <button type="button" class="product-page__lightbox-arrow product-page__lightbox-arrow--prev" data-lightbox-prev aria-label="Previous image">
+        <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <img src="" alt="{{ product.title | default: shop.name | escape }}" class="product-page__lightbox-img" data-lightbox-img>
+      <button type="button" class="product-page__lightbox-arrow product-page__lightbox-arrow--next" data-lightbox-next aria-label="Next image">
+        <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
+      </button>
+    </div>
+    <div class="product-page__lightbox-thumbs" data-lightbox-thumbs aria-label="Choose image"></div>
   </div>
 
   {% comment %} 通用确认弹窗（清空购物车等危险操作） {% endcomment %}

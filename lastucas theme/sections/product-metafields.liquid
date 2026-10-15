@@ -9,8 +9,10 @@
   3. custom.specifications → JSON（键值对对象）
   4. custom.faq            → Metaobject 列表（type: faq_item）
      字段：question（单行文本）/ answer（富文本）
+  5. custom.reviews        → Metaobject 列表（type: review_item）
+     字段：image（文件）/ rating（整数 1-5）/ text（多行文本）/ author（单行文本）
 
-  后台配置方法见主题说明（Metaobject 定义：icon_feature、content_block、faq_item）。
+  后台配置方法见主题说明（Metaobject 定义：icon_feature、content_block、faq_item、review_item）。
 {% endcomment %}
 
 {%- liquid
@@ -26,6 +28,11 @@
   endif
   assign specs = product.metafields.custom.specifications.value
   assign faqs = product.metafields.custom.faq.value
+  # 买家秀：兼容单复数（reviews / review）
+  assign reviews = product.metafields.custom.reviews.value
+  if reviews == blank
+    assign reviews = product.metafields.custom.review.value
+  endif
 
   assign has_icons = false
   if icon_features != blank and icon_features.size > 0
@@ -43,39 +50,64 @@
   if faqs != blank and faqs.size > 0
     assign has_faqs = true
   endif
+  assign has_reviews = false
+  if reviews != blank and reviews.size > 0
+    assign has_reviews = true
+  endif
 -%}
 
-{%- if has_blocks or has_specs or has_faqs -%}
+{%- if has_blocks or has_specs or has_faqs or has_reviews -%}
 <section class="pfb pfb--metafield" data-pfb-metafield>
   <div class="container">
 
     {%- comment %} 图标条已移至 main-product.liquid（TECHNICAL DETAILS 下方），此处不再渲染 {% endcomment -%}
 
-    {%- comment %} ============ 交替图文（按 metaobject 顺序渲染） ============ {% endcomment -%}
+    {%- comment %} ============ 交替图文（按 metaobject 顺序渲染）
+      规则：有图片 → 图文块；无图片但有正文 → 图文块(编辑模式显示占位符)；无图片且无正文仅有标题 → 居中章节大标题 {% endcomment -%}
     {%- if has_blocks -%}
       {%- for cb in content_blocks -%}
         {%- assign cb_img = cb.image.value -%}
         {%- assign cb_flip = cb.flip.value -%}
-        <div class="pfb__media-text{% if cb_flip %} pfb__media-text--flip{% endif %}">
-          {%- if cb_img != blank -%}
+        {%- if cb_img != blank -%}
+          <div class="pfb__media-text{% if cb_flip %} pfb__media-text--flip{% endif %}">
             <div class="pfb__media-text-media">
               <img src="{{ cb_img | image_url: width: 1200 }}"
                    alt="{{ cb.title.value | escape }}"
                    loading="lazy" width="1200" height="800">
             </div>
-          {%- endif -%}
-          <div class="pfb__media-text-body">
-            {%- if cb.eyebrow.value != blank -%}
-              <span class="pfb__eyebrow">{{ cb.eyebrow.value | escape }}</span>
-            {%- endif -%}
-            {%- if cb.title.value != blank -%}
-              <h3 class="pfb__title">{{ cb.title.value | escape }}</h3>
-            {%- endif -%}
-            {%- if cb.text.value != blank -%}
-              <div class="pfb__text">{{ cb.text | metafield_tag }}</div>
-            {%- endif -%}
+            <div class="pfb__media-text-body">
+              {%- if cb.eyebrow.value != blank -%}
+                <span class="pfb__eyebrow">{{ cb.eyebrow.value | escape }}</span>
+              {%- endif -%}
+              {%- if cb.title.value != blank -%}
+                <h3 class="pfb__title">{{ cb.title.value | escape }}</h3>
+              {%- endif -%}
+              {%- if cb.text.value != blank -%}
+                <div class="pfb__text">{{ cb.text | metafield_tag }}</div>
+              {%- endif -%}
+            </div>
           </div>
-        </div>
+        {%- elsif cb.text.value != blank -%}
+          {%- comment %} 有正文但没传图：编辑模式显示占位符，前台只渲染文字（照片上传后自动补位） {% endcomment -%}
+          <div class="pfb__media-text{% if cb_flip %} pfb__media-text--flip{% endif %}">
+            {%- if request.design_mode -%}
+              <div class="pfb__media-text-media">
+                {{ 'product-1' | placeholder_svg_tag: 'pfb__placeholder' }}
+              </div>
+            {%- endif -%}
+            <div class="pfb__media-text-body">
+              {%- if cb.eyebrow.value != blank -%}
+                <span class="pfb__eyebrow">{{ cb.eyebrow.value | escape }}</span>
+              {%- endif -%}
+              {%- if cb.title.value != blank -%}
+                <h3 class="pfb__title">{{ cb.title.value | escape }}</h3>
+              {%- endif -%}
+              <div class="pfb__text">{{ cb.text | metafield_tag }}</div>
+            </div>
+          </div>
+        {%- elsif cb.title.value != blank -%}
+          <h2 class="pfb__heading">{{ cb.title.value | escape }}</h2>
+        {%- endif -%}
       {%- endfor -%}
     {%- endif -%}
 
@@ -109,6 +141,42 @@
       </div>
     {%- endif -%}
 
+    {%- comment %} ============ Customer Highlights 买家秀（A+ 底部） ============ {% endcomment -%}
+    {%- if has_reviews -%}
+      <div class="pfb__reviews">
+        <h2 class="pfb__heading">{{ section.settings.reviews_heading | default: 'Customer Highlights' | escape }}</h2>
+        {%- if section.settings.reviews_sub != blank -%}
+          <p class="reviews__sub">{{ section.settings.reviews_sub | escape }}</p>
+        {%- endif -%}
+        <div class="reviews-grid">
+          {%- for r in reviews -%}
+            <div class="review-card">
+              <div class="review-card__media">
+                {%- assign r_img = r.image.value -%}
+                {%- if r_img != blank -%}
+                  <img src="{{ r_img | image_url: width: 600 }}" alt="{{ r.author.value | escape }}" loading="lazy">
+                {%- elsif request.design_mode -%}
+                  {{ 'product-1' | placeholder_svg_tag: 'pfb__placeholder pfb__placeholder--square' }}
+                {%- endif -%}
+              </div>
+              {%- assign rt = r.rating.value | default: 5 -%}
+              <div class="review-card__stars" aria-label="{{ rt }} out of 5 stars">
+                {%- for i in (1..5) -%}
+                  {%- if i <= rt -%}<span class="is-on">★</span>{%- else -%}<span class="is-off">★</span>{%- endif -%}
+                {%- endfor -%}
+              </div>
+              {%- if r.text.value != blank -%}
+                <div class="review-card__text">{{ r.text.value | escape }}</div>
+              {%- endif -%}
+              {%- if r.author.value != blank -%}
+                <span class="review-card__name">{{ r.author.value | escape }}</span>
+              {%- endif -%}
+            </div>
+          {%- endfor -%}
+        </div>
+      </div>
+    {%- endif -%}
+
   </div>
 </section>
 {%- endif -%}
@@ -121,7 +189,19 @@
   "settings": [
     {
       "type": "paragraph",
-      "content": "本区块内容全部来自产品元字段：custom.icon_features / custom.content_blocks / custom.specifications / custom.faq。产品未填写时整个区块自动隐藏。"
+      "content": "本区块内容全部来自产品元字段：custom.icon_features / custom.content_blocks / custom.specifications / custom.faq / custom.reviews。产品未填写时整个区块自动隐藏。"
+    },
+    {
+      "type": "text",
+      "id": "reviews_heading",
+      "label": "买家秀标题",
+      "default": "Customer Highlights"
+    },
+    {
+      "type": "textarea",
+      "id": "reviews_sub",
+      "label": "买家秀副标题",
+      "default": "Real-life setups from homes using LASTUCAS floor lamps for brighter, more flexible room lighting."
     }
   ],
   "presets": [
