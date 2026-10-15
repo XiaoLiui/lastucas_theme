@@ -1,0 +1,23 @@
+{%- comment %}
+  Sticky Add to Cart - PDP 移动端吸底加购条（≤768px 显示）
+  参数：product、form_id（主表单 id，按钮通过 form 属性提交同一表单）
+{%- endcomment -%}
+{%- assign sv = product.selected_or_first_available_variant -%}
+<div class="sticky-add-to-cart" data-sticky-add-to-cart aria-hidden="true">
+  <div class="sticky-add-to-cart__price">
+    <span class="now" data-sticky-price>{{ sv.price | money }}</span>
+    {%- if sv.compare_at_price > sv.price -%}
+      <span class="was" data-sticky-compare>{{ sv.compare_at_price | money }}</span>
+    {%- endif -%}
+  </div>
+  <button
+    type="submit"
+    form="{{ form_id }}"
+    name="add"
+    class="btn btn--primary sticky-add-to-cart__btn"
+    data-sticky-add-to-cart-btn
+    {% unless sv.available %}disabled{% endunless %}
+  >
+    {%- if sv.available -%}Add to cart{%- else -%}Sold out{%- endif -%}
+  </button>
+</div>

@@ -1,0 +1,17 @@
+{%- comment %}
+  Breadcrumbs - PDP 面包屑
+  参数：product（可选）、collection（可选）
+{%- endcomment -%}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+  <a href="{{ routes.root_url }}">Home</a>
+  <span class="breadcrumbs__sep" aria-hidden="true">/</span>
+  {%- if collection and collection.handle != blank -%}
+    <a href="{{ collection.url }}">{{ collection.title | escape }}</a>
+    <span class="breadcrumbs__sep" aria-hidden="true">/</span>
+  {%- elsif product and product.collections.size > 0 -%}
+    {%- assign breadcrumb_collection = product.collections.first -%}
+    <a href="{{ breadcrumb_collection.url }}">{{ breadcrumb_collection.title | escape }}</a>
+    <span class="breadcrumbs__sep" aria-hidden="true">/</span>
+  {%- endif -%}
+  <span aria-current="page">{{ product.title | escape }}</span>
+</nav>

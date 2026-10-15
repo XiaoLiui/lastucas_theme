@@ -1,0 +1,16 @@
+{%- comment %}
+  Rating Stars - 星级 + 评价数（预留接 Shopify Reviews / Judge.me）
+  参数：score（评分，如 4.8）；review_count（评价数文案，如 "1,234 reviews"）
+{%- endcomment -%}
+{%- assign score = score | default: 5 -%}
+{%- assign filled = score | plus: 0 | round -%}
+<div class="rating-stars" role="img" aria-label="Rated {{ score }} out of 5 stars">
+  <span class="rating-stars__stars" aria-hidden="true">
+    {%- for i in (1..5) -%}
+      {%- if i <= filled -%}★{%- else -%}<span class="is-empty">★</span>{%- endif -%}
+    {%- endfor -%}
+  </span>
+  {%- if review_count != blank -%}
+    <span class="rating-stars__count">{{ review_count | escape }}</span>
+  {%- endif -%}
+</div>

@@ -19,6 +19,13 @@
         <div class="make-home__img make-home__img--placeholder">Family reading scene</div>
       {% endif %}
     </div>
+    {% if section.settings.button_label != blank %}
+      <div class="make-home__cta">
+        <a href="{{ section.settings.button_link | default: '/collections/floor-lamps' }}" class="btn btn--primary">
+          {{ section.settings.button_label | escape }}
+        </a>
+      </div>
+    {% endif %}
   </div>
 </section>
 
@@ -50,7 +57,18 @@
       "label": "Selling point 3",
       "default": "Lifetime Support"
     },
-    { "type": "image_picker", "id": "image", "label": "Family scene image" }
+    { "type": "image_picker", "id": "image", "label": "Family scene image" },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "Button label",
+      "default": "Shop Floor Lamps"
+    },
+    {
+      "type": "url",
+      "id": "button_link",
+      "label": "Button link"
+    }
   ],
   "presets": [
     { "name": "Make Home CTA" }

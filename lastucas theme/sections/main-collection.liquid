@@ -1,4 +1,9 @@
-{% comment %} 合集页 - 产品列表 {% endcomment %}
+{% comment %}
+  合集页 - 产品列表 + Shopify OS 2.0 storefront 筛选 + 排序 + 分页
+  筛选面板（桌面侧栏 / 移动 bottom sheet）复用 snippets/collection-filters.liquid
+{% endcomment %}
+
+{%- assign current_sort = collection.sort_by | default: collection.default_sort_by -%}
 
 {% comment %} 1. 顶部 Hero 横幅 {% endcomment %}
 <section class="collection-hero">
@@ -11,60 +16,78 @@
   <h1 class="collection-hero__title">{{ collection.title | escape }}</h1>
 </section>
 
-{% comment %} 2. 工具栏：排序 + 搜索 + 分页 {% endcomment %}
+{% comment %} 2. 工具栏：排序 + 筛选入口（移动端） {% endcomment %}
 <section class="collection-toolbar container">
   <div class="collection-toolbar__left">
-    <label class="collection-toolbar__label">Sort By:</label>
-    <select class="collection-toolbar__select" onchange="window.location.href=this.value">
-      <option value="?sort=manual" {% if sort_by == 'manual' %}selected{% endif %}>Featured</option>
-      <option value="?sort=price-ascending" {% if sort_by == 'price-ascending' %}selected{% endif %}>Price: Low to High</option>
-      <option value="?sort=price-descending" {% if sort_by == 'price-descending' %}selected{% endif %}>Price: High to Low</option>
-      <option value="?sort=title-ascending" {% if sort_by == 'title-ascending' %}selected{% endif %}>Name: A-Z</option>
-      <option value="?sort=created-descending" {% if sort_by == 'created-descending' %}selected{% endif %}>Newest</option>
+    <label class="collection-toolbar__label" for="SortBy">Sort By:</label>
+    <select id="SortBy" class="collection-toolbar__select" data-sort-select>
+      <option value="manual" {% if current_sort == 'manual' %}selected{% endif %}>Featured</option>
+      <option value="price-ascending" {% if current_sort == 'price-ascending' %}selected{% endif %}>Price: Low to High</option>
+      <option value="price-descending" {% if current_sort == 'price-descending' %}selected{% endif %}>Price: High to Low</option>
+      <option value="title-ascending" {% if current_sort == 'title-ascending' %}selected{% endif %}>Name: A-Z</option>
+      <option value="created-descending" {% if current_sort == 'created-descending' %}selected{% endif %}>Newest</option>
     </select>
   </div>
   <div class="collection-toolbar__right">
-    <input type="text" class="collection-toolbar__search" placeholder="Search for...">
-    {% if paginate.pages > 1 %}
-      <div class="collection-toolbar__pagination">
-        {% if paginate.previous %}
-          <a href="{{ paginate.previous.url }}">‹</a>
-        {% endif %}
-        <span>{{ paginate.current_page }} / {{ paginate.pages }}</span>
-        {% if paginate.next %}
-          <a href="{{ paginate.next.url }}">›</a>
-        {% endif %}
-      </div>
-    {% endif %}
+    {% render 'collection-filters', collection: collection, part: 'toggle' %}
   </div>
 </section>
 
-{% comment %} 3. 产品网格 {% endcomment %}
-<section class="collection-grid container">
-  {% paginate collection.products by 9 %}
-    <div class="collection-grid__inner">
-      {% for product in collection.products %}
-        <div class="collection-grid__item">
-          {% render 'product-card', product: product %}
-        </div>
-      {% else %}
-        <p class="collection-grid__empty">No products found in this collection.</p>
-      {% endfor %}
-    </div>
+{% comment %} 3. 已选筛选 chip + Clear all {% endcomment %}
+<div class="container">
+  {% render 'collection-filters', collection: collection, part: 'chips' %}
+</div>
 
-    {% if paginate.pages > 1 %}
-      <div class="collection-grid__pagination">
-        {% if paginate.previous %}
-          <a href="{{ paginate.previous.url }}">‹</a>
+{% comment %} 4. 产品网格 + 筛选侧栏 {% endcomment %}
+<section class="collection-grid container">
+  {% paginate collection.products by 12 %}
+    <div class="collection-layout">
+      {% render 'collection-filters', collection: collection, part: 'sidebar' %}
+
+      <div class="collection-grid__results">
+        {% if collection.products_count > 0 %}
+          <p class="collection-result-info">
+            Showing {{ paginate.current_offset | plus: 1 }}–{{ paginate.current_offset | plus: paginate.items }} of {{ collection.products_count }} products
+          </p>
         {% endif %}
-        <span>{{ paginate.current_page }} / {{ paginate.pages }}</span>
-        {% if paginate.next %}
-          <a href="{{ paginate.next.url }}">›</a>
+
+        <div class="collection-grid__inner">
+          {% for product in collection.products %}
+            <div class="collection-grid__item">
+              {% render 'product-card', product: product %}
+            </div>
+          {% else %}
+            <div class="collection-grid__empty">
+              <p>No products match your filters.</p>
+              <a href="{{ collection.url }}{% if current_sort != blank %}?sort_by={{ current_sort }}{% endif %}" class="btn btn--primary">Clear filters</a>
+            </div>
+          {% endfor %}
+        </div>
+
+        {% if paginate.pages > 1 %}
+          <div class="collection-grid__pagination">
+            {% if paginate.previous %}
+              <a href="{{ paginate.previous.url }}" aria-label="Previous page">‹</a>
+            {% endif %}
+            {% for part in paginate.parts %}
+              {% if part.is_link %}
+                <a href="{{ part.url }}" class="page-link">{{ part.title }}</a>
+              {% else %}
+                <span class="page-link is-current" aria-current="page">{{ part.title }}</span>
+              {% endif %}
+            {% endfor %}
+            {% if paginate.next %}
+              <a href="{{ paginate.next.url }}" aria-label="Next page">›</a>
+            {% endif %}
+          </div>
         {% endif %}
       </div>
-    {% endif %}
+    </div>
   {% endpaginate %}
 </section>
+
+{% comment %} 5. 移动端筛选 bottom sheet {% endcomment %}
+{% render 'collection-filters', collection: collection, part: 'sheet' %}
 
 {% schema %}
 {

@@ -1,6 +1,6 @@
 {% comment %}
   Header - 三栏布局：Logo 左 / 导航中 / 图标右
-  对应截图 SUNMORY 导航
+  对应截图 LASTUCAS 导航
 {% endcomment %}
 <header class="header" style="background-color: {{ section.settings.bg_color }};">
   <div class="header__inner container">
@@ -27,10 +27,11 @@
         <ul class="header__nav-list">
           {% for link in section.settings.menu.links %}
             <li class="header__nav-item">
-              <a href="{{ link.url }}" class="header__nav-link {% if link.active %}is-active{% endif %}">
+              <a href="{{ link.url }}" class="header__nav-link {% if link.active %}is-active{% endif %}"
+                 {% if link.links.size > 0 %}aria-haspopup="true" aria-expanded="false"{% endif %}>
                 {{ link.title | escape }}
                 {% if link.links.size > 0 %}
-                  <span class="header__nav-caret">▾</span>
+                  <span class="header__nav-caret" aria-hidden="true">▾</span>
                 {% endif %}
               </a>
               {% if link.links.size > 0 %}
@@ -75,7 +76,7 @@
 {% comment %} 移动端抽屉菜单 {% endcomment %}
 <div class="mobile-menu" data-mobile-menu aria-hidden="true">
   <div class="mobile-menu__overlay" data-mobile-menu-close></div>
-  <aside class="mobile-menu__panel" role="dialog" aria-label="Mobile menu">
+  <aside class="mobile-menu__panel" role="dialog" aria-modal="true" aria-label="Mobile menu">
     <button type="button" class="mobile-menu__close" data-mobile-menu-close aria-label="Close menu">×</button>
     
     <div class="mobile-menu__logo">
@@ -93,12 +94,19 @@
         <ul class="mobile-menu__list">
           {% for link in section.settings.menu.links %}
             <li class="mobile-menu__item">
-              <a href="{{ link.url }}" class="mobile-menu__link">
-                {{ link.title | escape }}
+              <a href="{{ link.url }}" class="mobile-menu__link" {% if link.links.size > 0 %}aria-expanded="false" aria-haspopup="true"{% endif %}>
+                <span>{{ link.title | escape }}</span>
                 {% if link.links.size > 0 %}
-                  <span class="mobile-menu__arrow">›</span>
+                  <span class="mobile-menu__arrow" aria-hidden="true">›</span>
                 {% endif %}
               </a>
+              {% if link.links.size > 0 %}
+                <ul class="mobile-menu__submenu">
+                  {% for child in link.links %}
+                    <li><a href="{{ child.url }}">{{ child.title | escape }}</a></li>
+                  {% endfor %}
+                </ul>
+              {% endif %}
             </li>
           {% endfor %}
         </ul>
@@ -127,7 +135,7 @@
       "type": "color",
       "id": "bg_color",
       "label": "Background color",
-      "default": "#FFFFFF"
+      "default": "#1C1712"
     }
   ],
   "presets": [

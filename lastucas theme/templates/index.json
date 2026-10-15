@@ -6,27 +6,58 @@
         "slide_1": {
           "type": "slide",
           "settings": {
-            "title": "SLEEK, MODERN DESIGNS FOR EVERY ROOM",
-            "button_label": "Shop Now",
-            "text_color": "#8a7a66"
+            "eyebrow": "FLOOR LAMPS · CRAFTED IN SMALL BATCHES",
+            "title": "Timeless floor lamps, cast in warm light.",
+            "subtitle": "Solid walnut and brushed brass, designed to make every evening feel considered.",
+            "button_label": "Shop Floor Lamps",
+            "button_link": "/collections/floor-lamps",
+            "secondary_button_label": "Our Story",
+            "secondary_button_link": "/pages/about-us",
+            "text_color": "#F3EEE5"
           }
         },
         "slide_2": {
           "type": "slide",
           "settings": {
-            "title": "COMFORT IN EVERY GLOW",
-            "button_label": "Explore Lamps",
-            "text_color": "#FFFFFF"
+            "eyebrow": "FLOOR LAMPS · CRAFTED IN SMALL BATCHES",
+            "title": "Comfort in every glow",
+            "subtitle": "Warm 2700K light, honest materials, and forms made to be lived with.",
+            "button_label": "Explore Floor Lamps",
+            "button_link": "/collections/floor-lamps",
+            "secondary_button_label": "Our Story",
+            "secondary_button_link": "/pages/about-us",
+            "text_color": "#F3EEE5"
           }
         }
       },
       "block_order": ["slide_1", "slide_2"],
       "settings": {}
     },
+    "trust": {
+      "type": "trust-bar",
+      "blocks": {
+        "t1": { "type": "item", "settings": { "text": "Free U.S. Shipping Over $150" } },
+        "t2": { "type": "item", "settings": { "text": "30-Day Easy Returns" } },
+        "t3": { "type": "item", "settings": { "text": "2-Year Warranty" } },
+        "t4": { "type": "item", "settings": { "text": "Ships from U.S. Warehouse" } }
+      },
+      "block_order": ["t1", "t2", "t3", "t4"],
+      "settings": {}
+    },
+    "collections": {
+      "type": "collection-cards",
+      "blocks": {
+        "c1": { "type": "card", "settings": { "title": "Arc Floor Lamps", "link": "/collections/arc-floor-lamps" } },
+        "c2": { "type": "card", "settings": { "title": "Torchiere Floor Lamps", "link": "/collections/torchiere-floor-lamps" } },
+        "c3": { "type": "card", "settings": { "title": "Floor Lamps with Shelves", "link": "/collections/floor-lamps-with-shelves" } }
+      },
+      "block_order": ["c1", "c2", "c3"],
+      "settings": {}
+    },
     "featured": {
       "type": "featured-products",
       "settings": {
-        "heading": "What's Popular Now",
+        "heading": "Bestsellers",
         "limit": 4
       }
     },
@@ -37,15 +68,21 @@
     "why": {
       "type": "features",
       "blocks": {
-        "f1": { "type": "feature", "settings": { "icon": "lamp", "title": "Free Product Trials" } },
-        "f2": { "type": "feature", "settings": { "icon": "truck", "title": "2-4 Days Fast Delivery" } },
-        "f3": { "type": "feature", "settings": { "icon": "star", "title": "4+Star Rating" } },
-        "f4": { "type": "feature", "settings": { "icon": "shield", "title": "12-Month Extended Warranty" } },
-        "f5": { "type": "feature", "settings": { "icon": "return", "title": "60 Days Return" } },
-        "f6": { "type": "feature", "settings": { "icon": "bulb", "title": "Pre-Test Program" } }
+        "f1": { "type": "feature", "settings": { "icon": "lamp", "title": "Solid Walnut & Brass" } },
+        "f2": { "type": "feature", "settings": { "icon": "truck", "title": "Free U.S. Shipping Over $150" } },
+        "f3": { "type": "feature", "settings": { "icon": "star", "title": "Rated 4.8 by 1,200+ Homes" } },
+        "f4": { "type": "feature", "settings": { "icon": "shield", "title": "2-Year Warranty" } },
+        "f5": { "type": "feature", "settings": { "icon": "return", "title": "30-Day Easy Returns" } },
+        "f6": { "type": "feature", "settings": { "icon": "bulb", "title": "Dimmable Warm Light" } }
       },
       "block_order": ["f1", "f2", "f3", "f4", "f5", "f6"],
       "settings": {}
+    },
+    "scenes": {
+      "type": "usage-scenes",
+      "settings": {
+        "heading": "Designed for every space"
+      }
     },
     "testimonials": {
       "type": "testimonials",
@@ -66,5 +103,5 @@
       "settings": {}
     }
   },
-  "order": ["hero", "featured", "immersive", "why", "testimonials", "blog", "makehome"]
+  "order": ["hero", "trust", "collections", "featured", "immersive", "why", "scenes", "testimonials", "blog", "makehome"]
 }

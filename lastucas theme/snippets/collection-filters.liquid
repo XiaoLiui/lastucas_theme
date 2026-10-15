@@ -1,0 +1,103 @@
+{%- comment %}
+  Collection Filters - Shopify OS 2.0 storefront filter（filter.v.* / filter.p.*）
+  通过 URL query 参数保留状态，刷新/分享/返回均可用。
+  参数：collection、part（toggle / chips / sidebar / sheet）
+  说明：Shopify 不允许 section 内再渲染 section，故以 snippet 形式在 main-collection 内复用。
+{%- endcomment -%}
+
+{%- assign sort_by = collection.sort_by | default: collection.default_sort_by -%}
+{%- assign has_filters = false -%}
+{%- if collection.filters.size > 0 -%}{%- assign has_filters = true -%}{%- endif -%}
+
+{%- if has_filters -%}
+  {%- comment %} 统计已选 filter 数量 {% endcomment -%}
+  {%- assign active_count = 0 -%}
+  {%- for filter in collection.filters -%}
+    {%- for value in filter.values -%}
+      {%- if value.active -%}{%- assign active_count = active_count | plus: 1 -%}{%- endif -%}
+    {%- endfor -%}
+  {%- endfor -%}
+
+  {%- assign clear_url = collection.url -%}
+  {%- if sort_by != blank -%}{%- assign clear_url = clear_url | append: '?sort_by=' | append: sort_by -%}{%- endif -%}
+
+  {%- if part == 'toggle' -%}
+    <button type="button" class="filter-toggle" data-filter-toggle aria-expanded="false">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+      Filter{% if active_count > 0 %} ({{ active_count }}){% endif %}
+    </button>
+  {%- endif -%}
+
+  {%- if part == 'chips' and active_count > 0 -%}
+    <div class="active-filters" data-active-filters>
+      <span class="active-filters__label" style="font-size:13px;color:var(--color-text-muted);">Active:</span>
+      {%- for filter in collection.filters -%}
+        {%- for value in filter.values -%}
+          {%- if value.active -%}
+            <span class="active-filters__chip">
+              {{ value.label | escape }}
+              <a href="{{ value.url_to_remove }}" aria-label="Remove filter {{ value.label | escape }}">×</a>
+            </span>
+          {%- endif -%}
+        {%- endfor -%}
+      {%- endfor -%}
+      <a href="{{ clear_url }}" class="active-filters__clear">Clear all</a>
+    </div>
+  {%- endif -%}
+
+  {%- if part == 'sidebar' or part == 'sheet' -%}
+    {%- capture filter_groups -%}
+      {%- for filter in collection.filters -%}
+        <div class="collection-filters__group">
+          <div class="collection-filters__group-title">{{ filter.label | escape }}</div>
+          <div class="collection-filters__options">
+            {%- for value in filter.values -%}
+              {%- if value.active -%}
+                <a href="{{ value.url_to_remove }}" class="collection-filters__option is-active" aria-pressed="true">
+                  <span class="collection-filters__check">✓</span>
+                  {%- if filter.type == 'color' -%}<span class="collection-filters__swatch" data-swatch="{{ value.value | escape }}"></span>{%- endif -%}
+                  <span>{{ value.label | escape }}</span>
+                </a>
+              {%- elsif value.count > 0 -%}
+                <a href="{{ value.url_to_add }}" class="collection-filters__option">
+                  <span class="collection-filters__check"></span>
+                  {%- if filter.type == 'color' -%}<span class="collection-filters__swatch" data-swatch="{{ value.value | escape }}"></span>{%- endif -%}
+                  <span>{{ value.label | escape }} <span class="collection-filters__count">{{ value.count }}</span></span>
+                </a>
+              {%- else -%}
+                <span class="collection-filters__option is-disabled">
+                  <span class="collection-filters__check"></span>
+                  {%- if filter.type == 'color' -%}<span class="collection-filters__swatch" data-swatch="{{ value.value | escape }}"></span>{%- endif -%}
+                  <span>{{ value.label | escape }}</span>
+                </span>
+              {%- endif -%}
+            {%- endfor -%}
+          </div>
+        </div>
+      {%- endfor -%}
+    {%- endcapture -%}
+
+    {%- if part == 'sidebar' -%}
+      <aside class="collection-filters collection-filters--sidebar" data-collection-filters>
+        {{ filter_groups }}
+      </aside>
+    {%- else -%}
+      <div class="filters-sheet" data-filters-sheet role="dialog" aria-modal="true" aria-label="Filters" hidden>
+        <div class="filters-sheet__overlay" data-filters-sheet-close></div>
+        <div class="filters-sheet__panel">
+          <div class="filters-sheet__head">
+            <h2 class="filters-sheet__title">Filters{% if active_count > 0 %} ({{ active_count }}){% endif %}</h2>
+            <button type="button" class="filters-sheet__close" data-filters-sheet-close aria-label="Close filters">×</button>
+          </div>
+          <div class="filters-sheet__groups">{{ filter_groups }}</div>
+          <div class="filters-sheet__foot">
+            <a href="{{ collection.url }}{% if sort_by != blank %}?sort_by={{ sort_by }}{% endif %}" class="btn btn--primary">Show {{ collection.products_count }} results</a>
+            {%- if active_count > 0 -%}
+              <a href="{{ clear_url }}" class="active-filters__clear" style="text-align:center;">Clear all</a>
+            {%- endif -%}
+          </div>
+        </div>
+      </div>
+    {%- endif -%}
+  {%- endif -%}
+{%- endif -%}
