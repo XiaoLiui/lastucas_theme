@@ -62,42 +62,11 @@
   (function () {
     'use strict';
 
+    // 轮播交互（箭头翻页 + 进度条）统一由 theme.js 暴露的 LASTUCAS.initCarousel 提供
     function initSlider(root) {
-      var slider = root.querySelector('[data-rec-slider]');
-      if (!slider || slider.dataset.recInit) return;
-      slider.dataset.recInit = '1';
-
-      var track = root.querySelector('[data-rec-track]');
-      var fill = root.querySelector('[data-rec-fill]');
-      var prev = root.querySelector('[data-rec-prev]');
-      var next = root.querySelector('[data-rec-next]');
-
-      function itemStep() {
-        var item = slider.querySelector('.rec-slider__item');
-        if (!item) return 300;
-        var gap = parseFloat(getComputedStyle(slider).columnGap || getComputedStyle(slider).gap) || 24;
-        return item.getBoundingClientRect().width + gap;
+      if (window.LASTUCAS && window.LASTUCAS.initCarousel) {
+        window.LASTUCAS.initCarousel(root);
       }
-
-      function update() {
-        var max = slider.scrollWidth - slider.clientWidth;
-        if (track && fill) {
-          var trackW = track.clientWidth;
-          var ratio = max > 0 ? slider.clientWidth / slider.scrollWidth : 1;
-          var fillW = Math.max(40, Math.min(trackW, ratio * trackW));
-          var p = max > 0 ? slider.scrollLeft / max : 0;
-          fill.style.width = fillW + 'px';
-          fill.style.transform = 'translateX(' + (p * (trackW - fillW)) + 'px)';
-        }
-        if (prev) prev.disabled = slider.scrollLeft <= 2;
-        if (next) next.disabled = slider.scrollLeft >= max - 2;
-      }
-
-      if (prev) prev.addEventListener('click', function () { slider.scrollBy({ left: -itemStep(), behavior: 'smooth' }); });
-      if (next) next.addEventListener('click', function () { slider.scrollBy({ left: itemStep(), behavior: 'smooth' }); });
-      slider.addEventListener('scroll', update, { passive: true });
-      window.addEventListener('resize', update);
-      update();
     }
 
     function loadRecommendations() {

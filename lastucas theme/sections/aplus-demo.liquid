@@ -19,10 +19,30 @@
 {% endcomment %}
 
 <section class="pfb pfb--metafield aplus-demo" data-aplus-demo>
+
+  {%- comment %} ============ §Tab 导航：Description / Specifications / Reviews / FAQ ------------
+    吸顶板块导航，点击平滑滚动到下方对应区域。
+    header 下滑隐藏时 Tab 同步上移（见 theme.js / base.css）。 {% endcomment -%}
+  <div class="pdp-tabs__sentinel" data-pdp-tabs-sentinel aria-hidden="true"></div>
+  <nav class="pdp-tabs" data-pdp-tabs aria-label="Product information">
+    <div class="container pdp-tabs__inner">
+      <div class="pdp-tabs__list">
+        <button type="button" class="pdp-tabs__tab is-active" data-pdp-tab="description" aria-current="true"><span>Description</span></button>
+        <button type="button" class="pdp-tabs__tab" data-pdp-tab="specifications"><span>Specifications</span></button>
+        <button type="button" class="pdp-tabs__tab" data-pdp-tab="reviews"><span>Reviews</span></button>
+        <button type="button" class="pdp-tabs__tab" data-pdp-tab="faq"><span>FAQ</span></button>
+      </div>
+      <button type="button" class="pdp-tabs__top" data-pdp-top aria-label="Back to top">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
+        <span>Top</span>
+      </button>
+    </div>
+  </nav>
+
   <div class="container">
 
     {%- comment %} ============ ① 图标特性条 ============ {% endcomment -%}
-    <div class="pfb__icons">
+    <div class="pfb__icons" id="pdp-description" data-pdp-anchor="description">
       <div class="pfb__icons-grid">
         <div class="pfb__icon-item">
           <span class="pfb__icon">
@@ -175,7 +195,7 @@
     </div>
 
     {%- comment %} ============ ⑥ Specifications ============ {% endcomment -%}
-    <div class="pfb__specs">
+    <div class="pfb__specs" id="pdp-specifications" data-pdp-anchor="specifications">
       <h2 class="pfb__heading">Specifications</h2>
       <div class="pfb__specs-grid">
         <div class="pfb__spec-row"><span class="pfb__spec-key">Power</span><span class="pfb__spec-val">36W LED, 3000 Lumens</span></div>
@@ -190,7 +210,7 @@
     </div>
 
     {%- comment %} ============ ⑦ Customer Highlights 买家秀 ============ {% endcomment -%}
-    <div class="pfb__reviews">
+    <div class="pfb__reviews" id="pdp-reviews" data-pdp-anchor="reviews">
       <h2 class="pfb__heading">Customer Highlights</h2>
       <p class="reviews__sub">Real-life setups from homes using LASTUCAS floor lamps for brighter, more flexible room lighting.</p>
       <div class="reviews-grid">
@@ -213,8 +233,8 @@
     </div>
 
     {%- comment %} ============ ⑧ FAQ ============ {% endcomment -%}
-    <div class="pfb__faq">
-      <h2 class="pfb__heading">Frequently Asked Questions</h2>
+    <div class="pfb__faq" id="pdp-faq" data-pdp-anchor="faq">
+      <h2 class="pfb__heading">FAQ</h2>
       <details class="pfb__faq-item">
         <summary class="pfb__faq-q">Can the top light and reading light be used separately?</summary>
         <div class="pfb__faq-a">Yes. Each of the three light heads can be switched on and off independently — use just the reading light, just the ambient glow, or any combination that suits the moment.</div>

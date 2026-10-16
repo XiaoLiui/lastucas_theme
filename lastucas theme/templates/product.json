@@ -17,7 +17,17 @@
         "products_to_show": 8,
         "full_width": true
       }
+    },
+    "recently-viewed": {
+      "type": "recently-viewed",
+      "settings": {
+        "heading": "Recently viewed",
+        "link_text": "Shop All Lighting",
+        "link_url": "/collections/all",
+        "products_to_show": 8,
+        "full_width": true
+      }
     }
   },
-  "order": ["main", "aplus-demo", "recommendations"]
+  "order": ["main", "aplus-demo", "recommendations", "recently-viewed"]
 }

@@ -129,7 +129,7 @@
     {%- comment %} ============ FAQ（折叠） ============ {% endcomment -%}
     {%- if has_faqs -%}
       <div class="pfb__faq">
-        <h2 class="pfb__heading">Frequently Asked Questions</h2>
+        <h2 class="pfb__heading">FAQ</h2>
         {%- for item in faqs -%}
           <details class="pfb__faq-item">
             <summary class="pfb__faq-q">{{ item.question.value | escape }}</summary>

@@ -4,7 +4,7 @@
   规则：
   1. 折扣产品必须同时展示 折扣价 + 划线原价（compare at price）
   2. 只有一个变体时不显示变体标识（颜色圆点）
-  3. 快捷加购：单变体直接加购（data-quick-add）；多变体跳转 PDP 选款
+  3. 卡片不提供悬浮加购入口（2026-10-16 按需求移除），加购统一走产品详情页
 {% endcomment %}
 <div class="product-card">
   <div class="product-card__media">
@@ -24,28 +24,6 @@
         <div class="product-card__no-image">No image</div>
       {% endif %}
     </a>
-
-    {% comment %}
-      快捷加购（VI §7.4 / UX §2.3）：
-      - 单变体且有货：按钮直加（theme.js 监听 [data-quick-add]）
-      - 多变体：链接跳 PDP（无 data-variant-id，避免被 JS 拦截）
-      - 售罄：不渲染加购入口
-    {% endcomment %}
-    {% if product.available and product.variants.size == 1 %}
-      <button
-        type="button"
-        class="product-card__quick-add"
-        data-quick-add
-        data-variant-id="{{ product.selected_or_first_available_variant.id }}"
-        aria-label="Add {{ product.title | escape }} to cart"
-      >Add to Cart</button>
-    {% elsif product.available and product.variants.size > 1 %}
-      <a
-        href="{{ product.url }}"
-        class="product-card__quick-add"
-        aria-label="Choose options for {{ product.title | escape }}"
-      >Select Options</a>
-    {% endif %}
   </div>
 
   <div class="product-card__info">

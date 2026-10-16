@@ -71,6 +71,53 @@
     return formatMoney(amount, fmt);
   }
 
+  /* --- 暴露公共方法，供各 section（推荐区 / 最近浏览等）复用 --- */
+  window.LASTUCAS = window.LASTUCAS || {};
+  window.LASTUCAS.formatMoney = formatMoney;
+  window.LASTUCAS.money = money;
+
+  /* 通用横向滑块：左右箭头翻页 + 底部进度条
+     约定 DOM：root 内需有 [data-rec-slider] / [data-rec-track] / [data-rec-fill]
+               / [data-rec-prev] / [data-rec-next] */
+  window.LASTUCAS.initCarousel = function (root) {
+    if (!root) return;
+    var slider = root.querySelector('[data-rec-slider]');
+    if (!slider || slider.dataset.recInit) return;
+    slider.dataset.recInit = '1';
+
+    var track = root.querySelector('[data-rec-track]');
+    var fill = root.querySelector('[data-rec-fill]');
+    var prev = root.querySelector('[data-rec-prev]');
+    var next = root.querySelector('[data-rec-next]');
+
+    function itemStep() {
+      var item = slider.querySelector('.rec-slider__item');
+      if (!item) return 300;
+      var gap = parseFloat(getComputedStyle(slider).columnGap || getComputedStyle(slider).gap) || 24;
+      return item.getBoundingClientRect().width + gap;
+    }
+
+    function update() {
+      var max = slider.scrollWidth - slider.clientWidth;
+      if (track && fill) {
+        var trackW = track.clientWidth;
+        var ratio = max > 0 ? slider.clientWidth / slider.scrollWidth : 1;
+        var fillW = Math.max(40, Math.min(trackW, ratio * trackW));
+        var p = max > 0 ? slider.scrollLeft / max : 0;
+        fill.style.width = fillW + 'px';
+        fill.style.transform = 'translateX(' + (p * (trackW - fillW)) + 'px)';
+      }
+      if (prev) prev.disabled = slider.scrollLeft <= 2;
+      if (next) next.disabled = slider.scrollLeft >= max - 2;
+    }
+
+    if (prev) prev.addEventListener('click', function () { slider.scrollBy({ left: -itemStep(), behavior: 'smooth' }); });
+    if (next) next.addEventListener('click', function () { slider.scrollBy({ left: itemStep(), behavior: 'smooth' }); });
+    slider.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    update();
+  };
+
   // 更新购物车角标：按产品种类数计；0 件时隐藏角标
   function updateBadge(count) {
     document.querySelectorAll('.cart-count').forEach(function (el) {
@@ -1055,9 +1102,58 @@
     const lightboxNext = document.querySelector('[data-lightbox-next]');
     const lightboxClose = document.querySelector('[data-lightbox-close]');
     const lightboxThumbsWrap = document.querySelector('[data-lightbox-thumbs]');
+    const lightboxStage = document.querySelector('[data-lightbox-stage]');
 
     let currentSlide = 0;
     const slideCount = slides.length;
+
+    // ===== 图片预热：切换/放大必须「点击即出图」 =====
+    // 把画廊两种尺寸（900 主图 / 1800 放大图）提前放进浏览器缓存，
+    // 命中缓存时换图是瞬时的，不会出现「点了没反应、在等下载」的空窗。
+    const imgCache = Object.create(null);
+    function preloadImage(url) {
+      if (!url) return null;
+      let entry = imgCache[url];
+      if (!entry) {
+        entry = new Image();
+        entry.decoding = 'async';
+        entry.src = url;
+        imgCache[url] = entry;
+      }
+      return entry;
+    }
+    function imageReady(url) {
+      const entry = url ? imgCache[url] : null;
+      return !!(entry && entry.complete && entry.naturalWidth > 0);
+    }
+    const slideImgEls = Array.prototype.map.call(slides, function (s) { return s.querySelector('img'); });
+    function slideImageUrls(i) {
+      const el = slideImgEls[i];
+      if (!el) return [];
+      return [el.getAttribute('data-src') || el.src, el.getAttribute('data-zoom')].filter(Boolean);
+    }
+    function preloadSlide(i) { slideImageUrls(i).forEach(preloadImage); }
+    function preloadAllSlides() {
+      for (let i = 0; i < slideCount; i++) preloadSlide(i);
+    }
+    // 首图 + 次图立即预热；其余在浏览器空闲时逐个补，避免抢首屏带宽
+    (function warmUpSlides() {
+      preloadSlide(0);
+      if (slideCount > 1) preloadSlide(1);
+      if (slideCount <= 2) return;
+      const schedule = function (fn) {
+        if ('requestIdleCallback' in window) window.requestIdleCallback(fn, { timeout: 1500 });
+        else window.setTimeout(fn, 150);
+      };
+      let i = 2;
+      const step = function () {
+        if (i >= slideCount) return;
+        preloadSlide(i);
+        i += 1;
+        schedule(step);
+      };
+      schedule(step);
+    })();
 
     // ===== 无限循环轮播 =====
     // 轨道结构变为 [末张克隆, 0, 1, ..., N-1, 首张克隆]，真实索引 idx 对应轨道位置 idx + 1
@@ -1275,12 +1371,10 @@
 
       mainImageWrap.addEventListener('mouseleave', hideZoom);
       // 鼠标悬停时预载当前图的高清版，避免首次弹出面板时背景空白
+      // （走统一缓存 preloadImage，这样后续 lightbox 能直接识别为"已就绪"）
       mainImageWrap.addEventListener('mouseenter', function () {
         const img = zoomImg();
-        if (img) {
-          const u = img.getAttribute('data-zoom');
-          if (u) { const pre = new Image(); pre.src = u; }
-        }
+        if (img) preloadImage(img.getAttribute('data-zoom'));
       });
     }
 
@@ -1311,10 +1405,44 @@
     }
 
     let lightboxTrapCleanup = null;
+
+    // 切换放大图：
+    //  1) 目标已在缓存 → 直接换，零等待
+    //  2) 未就绪 → 先用已加载的小图占位（画面立刻有内容，不闪白），
+    //     同时立刻挂上加载反馈，图下载完再无缝替换
+    //  3) 连续快速切换时用 token 丢弃过期回调，避免旧图覆盖新图
+    let lightboxToken = 0;
+    function setLightboxImage(src, placeholder) {
+      if (!lightboxImg || !src) return;
+      const token = ++lightboxToken;
+      const stopLoading = function () {
+        if (token !== lightboxToken) return;
+        lightboxImg.classList.remove('is-loading');
+        if (lightboxStage) lightboxStage.classList.remove('is-loading');
+      };
+      const settle = function (url) {
+        if (token !== lightboxToken) return;
+        lightboxImg.src = url;
+        stopLoading();
+      };
+
+      if (imageReady(src)) { settle(src); return; } // 缓存命中：瞬时显示
+
+      if (placeholder && imageReady(placeholder)) lightboxImg.src = placeholder;
+      lightboxImg.classList.add('is-loading');
+      if (lightboxStage) lightboxStage.classList.add('is-loading');
+
+      const loader = preloadImage(src);
+      if (imageReady(src)) { settle(src); return; }
+      loader.addEventListener('load', function () { settle(src); }, { once: true });
+      loader.addEventListener('error', stopLoading, { once: true });
+    }
+
     function lightboxShow(idx) {
       const img = slides[idx] ? slides[idx].querySelector('img') : null;
       const src = img ? (img.getAttribute('data-zoom') || img.getAttribute('data-src') || img.src) : '';
-      if (lightboxImg) lightboxImg.src = src;
+      const placeholder = img ? (img.getAttribute('data-src') || img.src) : '';
+      setLightboxImage(src, placeholder);
       // 同步底部缩略图激活态并滚动到可见
       lightboxThumbs.forEach(function (t, i) {
         t.classList.toggle('is-active', i === idx);
@@ -1330,6 +1458,8 @@
         lightbox.hidden = false;
         lightbox.setAttribute('aria-hidden', 'false');
       }
+      // 打开放大预览 = 用户接下来大概率要翻图，立刻把剩余图片全部预热
+      if (wasHidden) preloadAllSlides();
       if (window.LASTUCAS && wasHidden) {
         window.LASTUCAS.setPageInert(true);
         lightboxTrapCleanup = window.LASTUCAS.trapFocus(lightbox);
@@ -1472,7 +1602,8 @@
       }
 
       // 2. 下滑隐藏，上滑显示（prefers-reduced-motion 下禁用隐藏动画）
-      if (!prefersReducedMotion) {
+      //    data-pdp-nav-lock：点击产品页 Tab 导航期间锁定 header 显示，保证落点一致
+      if (!prefersReducedMotion && !document.documentElement.hasAttribute('data-pdp-nav-lock')) {
         const diff = y - lastY;
         if (diff > 4 && y > announcementHeight + 50) {
           headerEl.classList.add('header--hidden');
@@ -1509,6 +1640,118 @@
     backToTopBtn.addEventListener('click', () => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     });
+  }
+
+  /* --- 产品页四模块 Tab 导航（Description / Specifications / Reviews / FAQ） ---
+     1. 点击平滑滚动到下方对应区域（按 header + Tab 实际高度补偿落点）
+     2. 下拉吸附在 header 正下方（base.css：position: sticky）
+     3. header 下滑隐藏时，Tab 用 transform 同步上移（与 header 同为 .3s ease）
+     4. rAF 节流的 scroll-spy 高亮当前所处模块
+     5. 右侧「回到顶部」按钮（产品页全局悬浮按钮已隐藏，统一到这里）
+     点击期间用 data-pdp-nav-lock 锁定 header 显示，避免滚动中 header 隐藏导致落点偏移 */
+  const pdpTabsEl = document.querySelector('[data-pdp-tabs]');
+  if (pdpTabsEl) {
+    const pdpBtns = Array.prototype.slice.call(pdpTabsEl.querySelectorAll('[data-pdp-tab]'));
+    const pdpInner = pdpTabsEl.querySelector('.pdp-tabs__inner');
+    const pdpTopBtn = pdpTabsEl.querySelector('[data-pdp-top]');
+    const pdpSentinel = document.querySelector('[data-pdp-tabs-sentinel]');
+    const pdpHeaderEl = document.querySelector('.header');
+    const pdpRoot = document.documentElement;
+    const pdpOrder = ['description', 'specifications', 'reviews', 'faq'];
+    const pdpMap = {};
+    document.querySelectorAll('[data-pdp-anchor]').forEach(function (el) {
+      pdpMap[el.getAttribute('data-pdp-anchor')] = el;
+    });
+
+    let pdpHeaderH = pdpHeaderEl ? pdpHeaderEl.offsetHeight : 73;
+    let pdpTabsH = pdpInner ? pdpInner.offsetHeight : 58;
+    let pdpTicking = false;
+    let pdpUnlockTimer = null;
+
+    function pdpSetActive(name) {
+      pdpBtns.forEach(function (btn) {
+        const on = btn.getAttribute('data-pdp-tab') === name;
+        btn.classList.toggle('is-active', on);
+        if (on) { btn.setAttribute('aria-current', 'true'); }
+        else { btn.removeAttribute('aria-current'); }
+      });
+    }
+
+    // 记录 header / Tab 实际高度（供吸顶 top 与落点补偿使用）
+    function pdpMeasure() {
+      pdpHeaderH = pdpHeaderEl ? pdpHeaderEl.offsetHeight : 73;
+      pdpTabsH = pdpInner ? pdpInner.offsetHeight : 58;
+      pdpRoot.style.setProperty('--header-h', pdpHeaderH + 'px');
+    }
+
+    // header 显隐 → Tab 同步位移（不改变布局，仅 transform）
+    function pdpSyncShift() {
+      if (!pdpHeaderEl) { return; }
+      const hidden = pdpHeaderEl.classList.contains('header--hidden');
+      const fixed = pdpHeaderEl.classList.contains('is-fixed');
+      pdpRoot.style.setProperty('--pdp-tabs-shift', (fixed && hidden ? -pdpHeaderEl.offsetHeight : 0) + 'px');
+    }
+    if (pdpHeaderEl && 'MutationObserver' in window) {
+      new MutationObserver(pdpSyncShift).observe(pdpHeaderEl, { attributes: true, attributeFilter: ['class'] });
+    }
+
+    function pdpOnScroll() {
+      pdpTicking = false;
+      // —— 先读后写，避免布局抖动 ——
+      const y = window.scrollY;
+      const sentinelTop = pdpSentinel ? (pdpSentinel.getBoundingClientRect().top + y) : 0;
+      const line = pdpHeaderH + pdpTabsH + 24;
+      let current = pdpOrder[0];
+      for (let i = 0; i < pdpOrder.length; i++) {
+        const el = pdpMap[pdpOrder[i]];
+        if (el && (el.getBoundingClientRect().top - line) <= 0) { current = pdpOrder[i]; }
+      }
+      const stuck = pdpSentinel ? (y >= sentinelTop - pdpHeaderH - 2) : false;
+
+      pdpSyncShift();
+      pdpTabsEl.classList.toggle('is-stuck', stuck);
+      pdpSetActive(current);
+    }
+
+    function pdpScrollTo(name) {
+      const target = pdpMap[name];
+      if (!target) { return; }
+      pdpSetActive(name);
+      // 锁定：点击期间保持 header 显示，落点稳定
+      pdpRoot.setAttribute('data-pdp-nav-lock', '1');
+      if (pdpHeaderEl) { pdpHeaderEl.classList.remove('header--hidden'); }
+      pdpRoot.style.setProperty('--pdp-tabs-shift', '0px');
+      const offset = pdpHeaderH + pdpTabsH + 8;
+      const top = Math.max(0, target.getBoundingClientRect().top + window.scrollY - offset);
+      window.scrollTo({ top: top, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+      function unlock() {
+        pdpRoot.removeAttribute('data-pdp-nav-lock');
+        window.removeEventListener('scrollend', unlock);
+        if (pdpUnlockTimer) { window.clearTimeout(pdpUnlockTimer); pdpUnlockTimer = null; }
+      }
+      if ('onscrollend' in window) { window.addEventListener('scrollend', unlock, { once: true }); }
+      if (pdpUnlockTimer) { window.clearTimeout(pdpUnlockTimer); }
+      pdpUnlockTimer = window.setTimeout(unlock, 1100);
+    }
+
+    pdpBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () { pdpScrollTo(btn.getAttribute('data-pdp-tab')); });
+    });
+    if (pdpTopBtn) {
+      pdpTopBtn.addEventListener('click', function () {
+        window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+      });
+    }
+
+    window.addEventListener('scroll', function () {
+      if (pdpTicking) { return; }
+      pdpTicking = true;
+      requestAnimationFrame(pdpOnScroll);
+    }, { passive: true });
+    window.addEventListener('resize', function () { pdpMeasure(); pdpOnScroll(); });
+    window.addEventListener('load', pdpMeasure);
+    pdpMeasure();
+    pdpOnScroll();
   }
 
   /* --- Immersive Showcase 滚动动画 --- */

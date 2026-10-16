@@ -63,6 +63,10 @@
   --t-fast: 150ms; --t-base: 250ms; --t-slow: 600ms;
   /* 布局 */
   --container-max: 1200px;
+  /* 产品页吸顶导航：header 高度 + Tab 栏高度（JS 会实时校正 --header-h） */
+  --header-h: 73px;
+  --pdp-tabs-h: 52px;
+  --pdp-tabs-shift: 0px;
 }
 
 /* --- Reset & Variables --- */
@@ -767,7 +771,8 @@ main { padding-top: 0; }
 
 /* --- Product Detail Page --- */
 .product-page {
-  padding: 40px 24px 80px;
+  /* 下留白 80→48px：产品页 A+ 顶部紧接 Tab 导航，收紧两段之间的空档 */
+  padding: 40px 24px 48px;
   background: var(--color-bg);
 }
 .product-page__grid {
@@ -988,7 +993,20 @@ main { padding-top: 0; }
   object-fit: contain;
   border-radius: 8px;
   box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  transition: opacity 0.18s var(--ease-out);
 }
+/* 放大图尚未就绪时：旧图不撤走（不闪白）+ 立即给出加载反馈，保证"点击即有响应" */
+.product-page__lightbox-img.is-loading { opacity: 0.45; }
+.product-page__lightbox-stage.is-loading::after {
+  content: ""; position: absolute; left: 50%; top: 50%;
+  width: 30px; height: 30px; margin: -15px 0 0 -15px;
+  border: 2px solid rgba(243,238,229,0.22);
+  border-top-color: var(--color-accent-bright);
+  border-radius: 50%;
+  animation: lc-spin 0.7s linear infinite;
+  pointer-events: none;
+}
+@keyframes lc-spin { to { transform: rotate(360deg); } }
 /* 底部缩略图切换条 */
 .product-page__lightbox-thumbs {
   flex: 0 0 auto;
@@ -2840,7 +2858,7 @@ main { padding-top: 0; }
 }
 .rec-slider::-webkit-scrollbar { display: none; }
 .rec-slider__item {
-  flex: 0 0 calc((100% - 2 * 24px) / 4.5);
+  flex: 0 0 calc((100% - 2 * 24px) / 5);
   min-width: 0;
   scroll-snap-align: start;
   display: flex;
@@ -2855,38 +2873,43 @@ main { padding-top: 0; }
   background-size: cover;
   background-position: center;
 }
-/* 推荐卡片：参考图布局——裸图圆角卡 + 信息区左对齐（无白底包裹） */
+/* 推荐卡片：参考图布局——裸图圆角卡 + 信息区左对齐（无白底包裹、无外边框） */
 .rec-slider__item .product-card {
   display: flex;
   flex-direction: column;
   width: 100%;
   background: transparent;
   box-shadow: none;
+  border: none;
   border-radius: 0;
 }
-.rec-slider__item .product-card:hover { transform: none; }
+/* hover 时保持干净：压掉 v3.0 暗色主题遗留的重黑阴影（0 16px 40px rgba(0,0,0,.45)） */
+.rec-slider__item .product-card:hover { transform: none; box-shadow: none; border: none; }
 .rec-slider__item .product-card__media {
   width: 100%;
-  aspect-ratio: 4/5;
-  border-radius: 16px;
+  aspect-ratio: 1 / 1;
+  border-radius: 14px;
 }
-.rec-slider__item .product-card__media:hover img { transform: none; }
+.rec-slider__item .product-card__media:hover img { transform: scale(1.04); }
+.rec-slider__item .product-card__media img { transition: transform var(--t-slow) var(--ease-in-out); }
 .rec-slider__item .product-card__info { padding: 14px 2px 0; }
 .rec-slider__item .product-card__title {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   line-height: 1.35;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* 价格统一贴右下角（色板留左，价格簇整体右对齐） */
 .rec-slider__item .product-card__bottom {
-  display: block;
-  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  margin-top: 8px;
 }
-.rec-slider__item .product-card__colors { margin-bottom: 6px; }
+.rec-slider__item .product-card__colors { margin-bottom: 0; }
 .rec-slider__item .product-card__color { width: 16px; height: 16px; }
-.rec-slider__item .product-card__price { font-size: 13px; }
+.rec-slider__item .product-card__price { font-size: 16px; margin-left: auto; }
 
 .rec-footer {
   display: flex;
@@ -2896,8 +2919,9 @@ main { padding-top: 0; }
 }
 .rec-progress {
   flex: 1;
-  height: 2px;
-  background: var(--color-border);
+  height: 4px;
+  background: var(--color-border-strong);
+  border-radius: 999px;
   position: relative;
   overflow: hidden;
 }
@@ -2907,7 +2931,8 @@ main { padding-top: 0; }
   top: 0;
   height: 100%;
   width: 40px;
-  background: var(--color-bg-alt);
+  background: var(--color-accent);
+  border-radius: 999px;
   transition: transform 0.15s linear;
   will-change: transform;
 }
@@ -2956,6 +2981,53 @@ main { padding-top: 0; }
   .rec-header__link { font-size: 12px; }
   .rec-footer { margin-top: 24px; gap: 16px; }
   .rec-arrow { width: 38px; height: 38px; }
+}
+
+/* ===== Recently viewed（最近浏览）=====
+   营销定位：这是「召回」模块——这些产品客户已经看过，不需要再用力推销，
+   展示力度必须明显弱于「You may also like」（发现/推荐）。
+   降级手段：一屏更多 → 单卡更小；标题/正文层级整体降一档；去掉放大戏剧化动效。
+   注意：全部带 .recently-viewed 前缀（特异性 0,2,0 > .rec-slider__item 的 0,1,0），
+   保证不被推荐区的通用规则或断点覆盖。 */
+.recently-viewed { padding-top: 40px; }
+
+/* 标题降级：34px/800 → 22px/700，不再和推荐区抢视觉重心 */
+.recently-viewed .rec-header { margin-bottom: 20px; }
+.recently-viewed .rec-header__title { font-size: 22px; font-weight: 700; letter-spacing: 0.01em; }
+.recently-viewed .rec-header__link { font-size: 12px; font-weight: 500; }
+
+/* 一屏 7 张（推荐区 5 张）→ 单卡约小 30%；间距同步收到 16px */
+.recently-viewed .rec-slider { gap: 16px; }
+.recently-viewed .rec-slider__item { flex: 0 0 calc((100% - 96px) / 7); }
+.recently-viewed .rec-slider__item .product-card__media { border-radius: 10px; }
+.recently-viewed .rec-slider__item .product-card__info { padding: 10px 2px 0; }
+
+/* 文字降级：标题转次要色、字号收小；价格保留深色但略小，仍可读可点 */
+.recently-viewed .product-card__title {
+  font-size: 13px; font-weight: 500; color: var(--color-text-secondary); line-height: 1.35;
+}
+.recently-viewed .product-card__price { font-size: 14px; }
+.recently-viewed .product-card__price--original { font-size: 12px; }
+
+/* 折扣角标缩小：保留信息量，但降低促销噪音 */
+.recently-viewed .product-card__badge { font-size: 10px; padding: 3px 6px; top: 8px; left: 8px; }
+
+/* 悬浮不再放大：复访入口不需要戏剧化动效，只做一个轻微减淡 */
+.recently-viewed .rec-slider__item .product-card__media img { transition: opacity 0.25s var(--ease-out); }
+.recently-viewed .rec-slider__item .product-card__media:hover img { transform: none; opacity: 0.82; }
+
+@media (max-width: 992px) {
+  .recently-viewed { padding-top: 32px; }
+  .recently-viewed .rec-slider { gap: 14px; }
+  .recently-viewed .rec-slider__item { flex-basis: calc((100% - 42px) / 4); }
+  .recently-viewed .rec-header__title { font-size: 19px; }
+}
+@media (max-width: 640px) {
+  .recently-viewed { padding-top: 24px; }
+  .recently-viewed .rec-slider { gap: 12px; }
+  .recently-viewed .rec-slider__item { flex-basis: calc((100% - 18px) / 2.5); }
+  .recently-viewed .rec-header { margin-bottom: 16px; }
+  .recently-viewed .rec-header__title { font-size: 17px; }
 }
 
 /* ===== 产品页信任保障模块（Buy Now 下方） ===== */
@@ -3825,7 +3897,7 @@ main { padding-top: 0; }
 /* 金底按钮自身聚焦时用暖白焦点环，避免金上金 */
 .btn--primary:focus-visible, .product-page__add-btn:focus-visible,
 .cart-summary__checkout:focus-visible, .cart-drawer__checkout-btn:focus-visible,
-.search-drawer__submit:focus-visible, .product-card__quick-add:focus-visible,
+.search-drawer__submit:focus-visible,
 .hero__btn--primary:focus-visible, .footer__newsletter-row button:focus-visible {
   outline: 2px solid var(--color-text); outline-offset: 2px;
 }
@@ -3870,43 +3942,25 @@ main { padding-top: 0; }
 .product-card {
   background: var(--color-surface); border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
-  box-shadow: 0 12px 32px rgba(0,0,0,0.35);
+  box-shadow: 0 6px 18px rgba(46,38,32,0.05);
   transition: border-color var(--t-base) var(--ease-out), box-shadow var(--t-base) var(--ease-out);
 }
-.product-card:hover { transform: none; border-color: var(--color-border-strong); box-shadow: 0 16px 40px rgba(0,0,0,0.45); }
+.product-card:hover { transform: none; border-color: var(--color-border-strong); box-shadow: 0 14px 32px rgba(46,38,32,0.10); }
 .product-card__media { aspect-ratio: 3 / 4; border-radius: var(--radius-md) var(--radius-md) 0 0; }
 .product-card__media-link { position: absolute; inset: 0; display: block; }
 .product-card__media img { transition: transform var(--t-slow) var(--ease-in-out); }
 .product-card__media:hover img { transform: scale(1.04); }
-.product-card__title { font-size: 16px; font-weight: 600; color: var(--color-text); }
-.product-card__price { font-weight: 600; font-variant-numeric: tabular-nums; }
+.product-card__title { font-size: 16px; font-weight: 600; color: var(--color-text); line-height: 1.4; }
+/* 价格统一贴右下角：色板留左，价格簇（售价 + 划线价）整体右对齐 */
+.product-card__bottom { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+.product-card__price {
+  margin-left: auto; text-align: right;
+  font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.product-card__price--original { font-size: 14px; color: var(--color-text-secondary); }
 .collection-grid .product-card__media { aspect-ratio: 3 / 4; }
 
-/* 快捷加购：默认隐藏，hover 淡入上移（移动端常驻圆形按钮） */
-.product-card__quick-add {
-  position: absolute; left: 12px; right: 12px; bottom: 12px;
-  min-height: 40px; display: flex; align-items: center; justify-content: center;
-  background: var(--color-accent); color: var(--color-text-inverse);
-  border: none; border-radius: var(--radius-sm);
-  font-family: var(--font-body); font-size: var(--fs-btn); font-weight: 600;
-  letter-spacing: 0.08em; text-transform: uppercase;
-  cursor: pointer; text-decoration: none;
-  opacity: 0; transform: translateY(8px); pointer-events: none;
-  transition: opacity var(--t-base) var(--ease-out), transform var(--t-base) var(--ease-out),
-              background var(--t-fast) var(--ease-out);
-}
-.product-card__media:hover .product-card__quick-add,
-.product-card__quick-add:focus-visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
-.product-card__quick-add:hover { background: var(--color-accent-strong); }
-.product-card__quick-add.is-loading { opacity: 1; transform: translateY(0); pointer-events: none; }
-@media (hover: none) {
-  .product-card__quick-add {
-    opacity: 1; transform: none; pointer-events: auto;
-    left: auto; right: 12px; bottom: 12px; width: 44px; height: 44px; min-height: 44px;
-    padding: 0; border-radius: 50%; font-size: 0; letter-spacing: 0; text-transform: none;
-  }
-  .product-card__quick-add::after { content: "+"; font-size: 24px; line-height: 1; }
-}
+/* 卡片悬浮加购按钮已于 2026-10-16 按需求移除（snippets/product-card.liquid 同步删除，加购统一走 PDP） */
 
 /* ---------- 输入框 / 表单（VI §7.3 暗调） ---------- */
 .search-drawer__input, .search-page__input, .auth-page__field input,
@@ -3934,27 +3988,63 @@ main { padding-top: 0; }
   font-family: var(--font-heading); font-weight: 600;
   font-size: 22px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-text);
 }
-.header__nav-link { font-size: 14px; font-weight: 500; color: var(--color-text-secondary); position: relative; }
-.header__nav-link:hover, .header__nav-link.is-active { color: var(--color-text); opacity: 1; }
-.header__nav-link.is-active::after,
-.header__nav-link:hover::after {
+.header__nav-link {
+  font-size: 14px; font-weight: 500; color: var(--color-text-secondary);
+  position: relative; padding: 8px 0;
+  transition: color 0.25s var(--ease-out);
+}
+/* 下划线：从中心向两侧展开（scaleX，GPU 加速更顺滑） */
+.header__nav-link::after {
   content: ""; position: absolute; left: 0; right: 0; bottom: 2px;
   height: 2px; background: var(--color-accent);
+  transform: scaleX(0); transform-origin: center;
+  transition: transform 0.32s var(--ease-out);
 }
+.header__nav-link:hover,
+.header__nav-link.is-active { color: var(--color-text); opacity: 1; }
+.header__nav-link:hover::after,
+.header__nav-link.is-active::after { transform: scaleX(1); }
+/* 下拉箭头：hover 时旋转 180° */
+.header__nav-caret { display: inline-block; margin-left: 6px; font-size: 10px; transition: transform 0.25s var(--ease-out); }
+.header__nav-item:hover .header__nav-caret,
+.header__nav-item:focus-within .header__nav-caret { transform: rotate(180deg); }
 .header__cart-count { background: var(--color-accent); color: var(--color-text-inverse); border-radius: var(--radius-sm); }
+/* 下拉面板：淡入 + 上移落定（并修正水平居中，原 v3.0 覆盖丢失了 translateX(-50%)） */
 .header__dropdown {
   background: var(--color-surface); border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm); box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-  opacity: 0; visibility: visible; pointer-events: none; transform: translateY(6px);
-  transition: opacity var(--t-fast) var(--ease-out), transform var(--t-fast) var(--ease-out);
+  border-radius: var(--radius-sm); box-shadow: 0 14px 34px rgba(36,29,21,0.14);
+  overflow: hidden;
+  opacity: 0; visibility: hidden; pointer-events: none;
+  transform: translate(-50%, 10px);
+  transition: opacity 0.24s var(--ease-out), transform 0.24s var(--ease-out), visibility 0s linear 0.24s;
 }
 .header__nav-item:hover .header__dropdown,
 .header__nav-item:focus-within .header__dropdown {
-  opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0);
+  opacity: 1; visibility: visible; pointer-events: auto; transform: translate(-50%, 0);
+  transition: opacity 0.24s var(--ease-out), transform 0.24s var(--ease-out), visibility 0s;
 }
-.header__dropdown a { color: var(--color-text-secondary); }
-.header__dropdown a:hover { color: var(--color-text); background: var(--color-surface-hover); }
-.header__nav-item:focus-within .header__dropdown { opacity: 1; visibility: visible; }
+.header__dropdown a {
+  color: var(--color-text-secondary);
+  transition: color 0.2s var(--ease-out), background 0.2s var(--ease-out), padding-left 0.2s var(--ease-out);
+}
+.header__dropdown a:hover { color: var(--color-text); background: var(--color-surface-hover); padding-left: 24px; }
+/* 下拉项：错峰上浮淡入（展开时逐条递进，收起时即时归位） */
+.header__dropdown li {
+  opacity: 0; transform: translateY(8px);
+  transition: opacity 0.26s var(--ease-out), transform 0.26s var(--ease-out);
+}
+.header__nav-item:hover .header__dropdown li,
+.header__nav-item:focus-within .header__dropdown li { opacity: 1; transform: translateY(0); }
+.header__nav-item:hover .header__dropdown li:nth-child(1),
+.header__nav-item:focus-within .header__dropdown li:nth-child(1) { transition-delay: 0.02s; }
+.header__nav-item:hover .header__dropdown li:nth-child(2),
+.header__nav-item:focus-within .header__dropdown li:nth-child(2) { transition-delay: 0.06s; }
+.header__nav-item:hover .header__dropdown li:nth-child(3),
+.header__nav-item:focus-within .header__dropdown li:nth-child(3) { transition-delay: 0.10s; }
+.header__nav-item:hover .header__dropdown li:nth-child(4),
+.header__nav-item:focus-within .header__dropdown li:nth-child(4) { transition-delay: 0.14s; }
+.header__nav-item:hover .header__dropdown li:nth-child(n+5),
+.header__nav-item:focus-within .header__dropdown li:nth-child(n+5) { transition-delay: 0.18s; }
 
 /* ---------- Announcement bar（香槟金条 · 浅色体系 v3.0） ---------- */
 .announcement-bar {
@@ -4021,9 +4111,6 @@ main { padding-top: 0; }
 .product-accordion__content { padding: 0 0 20px; font-size: 15px; line-height: 1.7; color: var(--color-text-secondary); }
 .product-accordion__content p { margin: 0 0 12px; }
 .product-accordion__content p:last-child { margin-bottom: 0; }
-.product-accordion__spec-row { display: grid; grid-template-columns: 180px 1fr; gap: 8px 16px; font-size: 14px; }
-.product-accordion__spec-row dt { color: var(--color-text-muted); font-weight: 500; }
-.product-accordion__spec-row dd { margin: 0; color: var(--color-text); }
 
 /* 变体禁用态（UX §3.1） */
 .product-page__option-btn.is-unavailable {
@@ -4051,20 +4138,80 @@ main { padding-top: 0; }
 .free-shipping-bar__fill { height: 100%; border-radius: 999px; background: var(--color-accent); transition: width var(--t-base) var(--ease-out); }
 .free-shipping-bar.is-complete .free-shipping-bar__fill { background: var(--color-success); }
 
-/* ---------- 吸底加购条（UX §4） ---------- */
+/* ---------- 吸底加购条（UX §4） ----------
+   入场/出场动画：display 无法过渡，所以常驻 display:flex，
+   改用 transform + opacity + visibility 做「从底部滑入 + 淡入」。
+   隐藏时 visibility 延迟到动画结束再切，避免淡出过程中被硬切掉。 */
 .sticky-add-to-cart {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 120;
-  display: none; align-items: center; gap: 16px;
+  display: flex; align-items: center; gap: 16px;
   padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
   background: var(--color-bg); border-top: 1px solid var(--color-border);
-  box-shadow: 0 -4px 16px rgba(0,0,0,0.4);
+  box-shadow: 0 -6px 20px rgba(46,38,32,0.10);
+  transform: translateY(100%);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  will-change: transform, opacity;
+  transition: transform 0.32s var(--ease-out),
+              opacity 0.24s var(--ease-out),
+              visibility 0s linear 0.32s;
 }
-.sticky-add-to-cart.is-visible { display: flex; }
+.sticky-add-to-cart.is-visible {
+  transform: translateY(0);
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition-delay: 0s;
+}
 .sticky-add-to-cart__price { flex: 1; min-width: 0; line-height: 1.2; }
 .sticky-add-to-cart__price .now { font-size: var(--fs-price); font-weight: 600; color: var(--color-text); font-variant-numeric: tabular-nums; }
 .sticky-add-to-cart__price .was { font-size: var(--fs-price-compare); color: var(--color-text-muted); text-decoration: line-through; margin-left: 8px; }
 .sticky-add-to-cart__btn { flex: 0 0 auto; min-height: 44px; border-radius: var(--radius-sm); }
-@media (min-width: 769px) { .sticky-add-to-cart.is-visible { display: none; } }
+/* 桌面端不显示（JS 也只在 ≤768px 才加 is-visible） */
+@media (min-width: 769px) { .sticky-add-to-cart { display: none; } }
+@media (prefers-reduced-motion: reduce) { .sticky-add-to-cart { transition: none; } }
+
+/* 抽屉层级修正：搜索 / 购物车抽屉原本是 z-index:100，比吸底加购条（120）低，
+   导致抽屉展开时底部加购条仍浮在最上层。提到 160（高于 120 / 150，低于 lightbox 200）。 */
+.search-drawer,
+.cart-drawer { z-index: 160; }
+
+/* ============================================
+   移动端（单列）产品页：面包屑 + 标题提到商品图之前
+   做法：grid → flex column；.product-page__info 用 display: contents
+   让它内部的子元素直接参与外层 flex 排序，只给面包屑 / 标题 / 商品图三组设 order，
+   其余元素保持默认 order:0 自然顺位 —— 纯 CSS 实现，不改 DOM，桌面端不受影响。
+   注意：gap 必须归零，否则 info 内部原本靠 margin 控制的间距会被额外撑开。
+   ============================================ */
+@media (max-width: 900px) {
+  .product-page__grid {
+    display: flex; flex-direction: column; gap: 0;
+    /* ⚠️ 必需：原 grid 里的 align-items:start 是「块轴」对齐，
+       改成 flex 纵向后它变成「水平轴」对齐 → 子项全部塌成内容宽度
+       （按钮只包住文字、缩略图行撑宽页面）。这里显式拉伸回整行。 */
+    align-items: stretch;
+  }
+  .product-page__info { display: contents; }
+  .product-page__info > .breadcrumbs { order: -3; }
+  .product-page__info > .product-page__title { order: -2; }
+  .product-page__media {
+    order: -1; margin-bottom: 32px;
+    /* ⚠️ 必需：原 grid 里的 align-self:start 是「块轴」对齐，改成 flex 纵向后
+       它变成「水平轴」对齐 → 宽度会塌成内容宽度，横排缩略图会把整页撑宽（曾撑到 850px）。
+       这里显式拉伸回整行宽度。 */
+    align-self: stretch;
+    width: 100%;
+  }
+  /* 标题不再刻意放大 */
+  .product-page__title { font-size: 23px; margin-bottom: 14px; }
+  /* 移动端：主图左右切换箭头隐藏（手指左右滑动即可切换，见 theme.js 触摸滑动逻辑）；
+     右下角放大按钮保留（点击打开大图浏览） */
+  .product-page__arrow { display: none; }
+}
+@media (max-width: 640px) {
+  .product-page__title { font-size: 21px; }
+}
 
 /* ---------- 集合页筛选（UX §3.4） ---------- */
 .collection-layout { display: grid; grid-template-columns: 240px 1fr; gap: 40px; align-items: start; }
@@ -4220,3 +4367,183 @@ html {
 }
 ::-webkit-scrollbar-thumb:hover { background: var(--color-accent); }
 ::-webkit-scrollbar-corner { background: var(--color-bg); }
+
+/* ============================================
+   【移动端横向滚动条修复】Footer Newsletter
+   根因：.footer__newsletter 是 grid，item 默认 min-width:auto 不允许收缩，
+   内部的订阅行（input 225px + 按钮 239px = 464px）把整页撑到 488px，
+   导致 390px 视口出现 98px 的页面级横向滚动条。
+   给两个 grid item 加 min-width:0 即可让 1fr 列正常收缩。
+   ============================================ */
+.footer__newsletter-left,
+.footer__newsletter-right { min-width: 0; max-width: 100%; }
+.footer__newsletter-row { min-width: 0; max-width: 100%; }
+.footer__newsletter-desc,
+.footer__newsletter-legal,
+.footer__newsletter-help { overflow-wrap: break-word; }
+
+/* ============================================
+   移动端 Header：汉堡靠左 / Logo 居中 / 图标靠右
+   默认 .header__inner 的 padding 0 40px 在手机上太挤（393px 屏只剩 313px），
+   收紧两侧留白、缩小图标间距，让按钮分散到两端。
+   ============================================ */
+@media (max-width: 640px) {
+  .header__inner { padding: 0 16px; grid-template-columns: 1fr auto 1fr; }
+  .header__menu-toggle { padding: 8px 8px 8px 0; justify-self: start; }
+  .header__logo { justify-self: center; }
+  .header__icons { justify-self: end; gap: 14px; }
+  .header__logo-text { font-size: 19px; letter-spacing: 0.16em; }
+}
+
+/* 移动端：产品页左右留白 24 → 16px
+   结构是 .product-page > .container > 内容，两层各 24px（合计 48px）。
+   外层给 16px 栅格后，内层 .container 的横向内边距归零，避免叠加。
+   与 Header / 吸底加购条统一为 16px 栅格，内容更宽、不再离边框太远。 */
+@media (max-width: 640px) {
+  .product-page { padding-left: 16px; padding-right: 16px; }
+  .product-page > .container { padding-left: 0; padding-right: 0; }
+  .aplus-demo > .container { padding-left: 16px; padding-right: 16px; }
+}
+
+/* ============================================
+   PDP Section Tabs（Description / Specifications / Reviews / FAQ）
+   吸顶板块导航：
+   - 默认随内容排布；下拉到顶后吸附在 header 正下方
+   - header 下滑隐藏时，通过 transform 同步上移（与 header 同为 .3s ease）
+   - 右侧为「回到顶部」按钮（产品页全局悬浮按钮已隐藏，统一到这里）
+   ============================================ */
+.pdp-tabs__sentinel { height: 0; }
+.pdp-tabs {
+  position: sticky;
+  top: var(--header-h, 73px);
+  z-index: 40;
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+  transform: translateY(var(--pdp-tabs-shift, 0px));
+  transition: transform 0.3s ease, box-shadow 0.25s var(--ease-out);
+  will-change: transform;
+}
+.pdp-tabs.is-stuck { box-shadow: 0 12px 26px -18px rgba(46, 38, 32, 0.45); }
+
+.pdp-tabs__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  height: var(--pdp-tabs-h, 52px);
+}
+.pdp-tabs__list {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.pdp-tabs__list::-webkit-scrollbar { display: none; }
+
+.pdp-tabs__tab {
+  position: relative;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  height: var(--pdp-tabs-h, 52px);
+  padding: 0;
+  margin: 0 36px 0 0;
+  border: 0;
+  background: none;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.22s var(--ease-out);
+}
+.pdp-tabs__tab:last-child { margin-right: 0; }
+.pdp-tabs__tab:hover { color: var(--color-text); }
+.pdp-tabs__tab.is-active { color: var(--color-text); }
+/* 下划线紧贴文字底部（不再贴到整条栏的底线），激活指示更清晰 */
+.pdp-tabs__tab > span {
+  position: relative;
+  display: inline-block;
+  line-height: 1;
+  /* 上下 padding 对称 → 文字在栏内保持垂直居中；
+     下划线改由 ::after 悬挂，不参与盒子的居中计算（否则文字会被顶偏） */
+  padding: 8px 0;
+}
+.pdp-tabs__tab > span::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 1px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--color-accent-strong);
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 0.28s var(--ease-out);
+}
+.pdp-tabs__tab.is-active > span::after { transform: scaleX(1); }
+
+.pdp-tabs__top {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  /* 默认隐藏：只有 Tab 栏吸附（.is-stuck）后才淡入，一旦脱离吸附立即淡出 */
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(4px);
+  transition: opacity 0.25s var(--ease-out), transform 0.25s var(--ease-out),
+              visibility 0s linear 0.25s,
+              border-color 0.2s var(--ease-out), color 0.2s var(--ease-out), background 0.2s var(--ease-out);
+}
+.pdp-tabs.is-stuck .pdp-tabs__top {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+  transition-delay: 0s;
+}
+.pdp-tabs__top svg { width: 14px; height: 14px; }
+.pdp-tabs__top:hover { border-color: var(--color-accent); color: var(--color-accent-strong); background: var(--color-bg); }
+
+/* 锚点落点补偿（键盘 / 哈希跳转同样正确） */
+[data-pdp-anchor] { scroll-margin-top: calc(var(--header-h, 73px) + var(--pdp-tabs-h, 52px) + 16px); }
+
+/* Tab 栏紧贴 A+ 区块顶部：去掉区块自身 40px 上留白，避免离上一模块过远 */
+.aplus-demo { padding-top: 0; }
+
+/* 「回到顶部」已移入产品页 Tab 栏 → 隐藏全局悬浮按钮（仅产品页） */
+.template-product .back-to-top { display: none !important; }
+
+@media (max-width: 900px) {
+  :root { --pdp-tabs-h: 50px; }
+  .pdp-tabs__inner { height: var(--pdp-tabs-h, 50px); gap: 12px; }
+  .pdp-tabs__tab { height: var(--pdp-tabs-h, 50px); font-size: 13px; letter-spacing: 0.03em; margin-right: 22px; }
+  .pdp-tabs__top { height: 32px; padding: 0 12px; gap: 4px; }
+}
+@media (max-width: 640px) {
+  :root { --pdp-tabs-h: 48px; }
+  .pdp-tabs__inner { padding: 0 12px; height: var(--pdp-tabs-h, 48px); gap: 10px; }
+  /* 手机端：固定间距 + 左对齐（不再 space-between 均分整行，避免字距被拉得过开） */
+  .pdp-tabs__list { flex: 0 1 auto; justify-content: flex-start; column-gap: 12px; }
+  .pdp-tabs__tab { height: var(--pdp-tabs-h, 48px); font-size: 12px; letter-spacing: 0.01em; margin-right: 0; }
+  .pdp-tabs__top { height: 30px; padding: 0 8px; }
+  .pdp-tabs__top span { display: none; }
+}

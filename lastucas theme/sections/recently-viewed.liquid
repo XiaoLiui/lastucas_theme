@@ -1,0 +1,264 @@
+{% comment %}
+  Recently viewed（最近浏览）
+  实现方式：纯前端 + 浏览器 localStorage，不依赖任何 App
+    - 键名 `lastucas:recently-viewed`，存产品 handle 数组（最新在前，最多 20 个）
+    - 在产品页加载时记录当前产品 handle（全局去重后置顶）
+    - 渲染时排除当前正在浏览的产品，取前 N 个，逐个请求 /products/<handle>.js 取数据
+    - 无历史 / localStorage 不可用 / 全部失效 → 整段隐藏，不占位
+  视觉：与 "You may also like" 完全一致（复用 .rec-* 组件类，外层复用 .product-recommendations 留白）
+{% endcomment %}
+
+<div
+  class="product-recommendations recently-viewed"
+  data-recently-viewed
+  data-product-handle="{{ product.handle }}"
+  data-limit="{{ section.settings.products_to_show }}"
+  style="{% unless section.settings.full_width %}max-width: 1280px; margin: 0 auto;{% endunless %}{% unless request.design_mode %} display: none;{% endunless %}"
+>
+  <div class="rec-header">
+    <h2 class="rec-header__title">{{ section.settings.heading | escape }}</h2>
+    {%- if section.settings.link_text != blank -%}
+      <a class="rec-header__link" href="{{ section.settings.link_url }}">{{ section.settings.link_text | escape }}</a>
+    {%- endif -%}
+  </div>
+
+  <div class="rec-slider" data-rec-slider>
+    {%- if request.design_mode -%}
+      {%- comment %} 仅主题编辑器：给一组占位卡片便于调标题/间距，前台不输出 {%- endcomment -%}
+      {%- for demo_product in collections.all.products limit: section.settings.products_to_show -%}
+        <div class="rec-slider__item">{% render 'product-card', product: demo_product %}</div>
+      {%- endfor -%}
+    {%- endif -%}
+  </div>
+
+  <div class="rec-footer" data-rv-footer>
+    <div class="rec-progress" data-rec-track>
+      <div class="rec-progress__fill" data-rec-fill></div>
+    </div>
+    <div class="rec-arrows">
+      <button type="button" class="rec-arrow" data-rec-prev aria-label="Previous">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button type="button" class="rec-arrow" data-rec-next aria-label="Next">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+{% raw %}
+<script>
+  (function () {
+    'use strict';
+
+    var STORAGE_KEY = 'lastucas:recently-viewed';
+    var MAX_STORED = 20;
+
+    function readList() {
+      try {
+        var raw = window.localStorage.getItem(STORAGE_KEY);
+        var arr = raw ? JSON.parse(raw) : [];
+        return Array.isArray(arr) ? arr : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function writeList(list) {
+      try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(list.slice(0, MAX_STORED)));
+      } catch (e) { /* 隐私模式等写入失败：静默忽略 */ }
+    }
+
+    function escapeHTML(str) {
+      return String(str == null ? '' : str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    // Shopify CDN 支持 width 参数，避免直接拉原图
+    function sizeImage(url, width) {
+      if (!url) return '';
+      if (url.indexOf('width=') !== -1) return url;
+      return url + (url.indexOf('?') === -1 ? '?' : '&') + 'width=' + width;
+    }
+
+    function money(cents) {
+      var lc = window.LASTUCAS || {};
+      if (lc.money) return lc.money(cents);
+      if (lc.formatMoney) return lc.formatMoney(cents, lc.moneyFormat);
+      return (cents / 100).toFixed(2);
+    }
+
+    function cardHTML(product) {
+      var url = product.url || '';
+      var title = escapeHTML(product.title);
+      var img = sizeImage(product.featured_image, 600);
+
+      var badge = '';
+      if (product.compare_at_price && product.compare_at_price > product.price) {
+        var percent = Math.round((product.compare_at_price - product.price) * 100 / product.compare_at_price);
+        badge = '<span class="product-card__badge product-card__badge--sale">Save ' + percent + '%</span>';
+      } else if (product.available === false) {
+        badge = '<span class="product-card__badge product-card__badge--soldout">Sold out</span>';
+      }
+
+      var priceHTML;
+      if (product.compare_at_price && product.compare_at_price > product.price) {
+        priceHTML = '<span class="product-card__price--sale">' + escapeHTML(money(product.price)) + '</span>'
+          + '<s class="product-card__price--original">' + escapeHTML(money(product.compare_at_price)) + '</s>';
+      } else {
+        priceHTML = '<span>' + escapeHTML(money(product.price)) + '</span>';
+      }
+
+      return ''
+        + '<div class="product-card">'
+        +   '<div class="product-card__media">'
+        +     '<a href="' + escapeHTML(url) + '" class="product-card__media-link" aria-label="' + title + '">'
+        +       badge
+        +       (img
+                  ? '<img src="' + escapeHTML(img) + '" alt="' + title + '" loading="lazy">'
+                  : '<div class="product-card__no-image">No image</div>')
+        +     '</a>'
+        +   '</div>'
+        +   '<div class="product-card__info">'
+        +     '<h3 class="product-card__title"><a href="' + escapeHTML(url) + '">' + title + '</a></h3>'
+        +     '<div class="product-card__bottom">'
+        +       '<div class="product-card__price">' + priceHTML + '</div>'
+        +     '</div>'
+        +   '</div>'
+        + '</div>';
+    }
+
+    function fetchProduct(handle) {
+      return fetch('/products/' + encodeURIComponent(handle) + '.js')
+        .then(function (res) { return res.ok ? res.json() : null; })
+        .catch(function () { return null; });
+    }
+
+    // 主题编辑器模式：此时 Liquid 已输出占位卡片，且外层不做隐藏
+    var designMode = !!(window.Shopify && window.Shopify.designMode);
+
+    function init(root) {
+      if (!root || root.dataset.rvInit) return;
+      root.dataset.rvInit = '1';
+
+      var currentHandle = root.getAttribute('data-product-handle') || '';
+      var limit = parseInt(root.getAttribute('data-limit'), 10) || 5;
+
+      // 1) 记录这次浏览（当前产品置顶、去重）
+      var list = readList();
+      if (currentHandle) {
+        list = list.filter(function (h) { return h !== currentHandle; });
+        list.unshift(currentHandle);
+        writeList(list);
+      }
+
+      // 2) 取历史里除当前产品外的前 N 个
+      var targets = list.filter(function (h) {
+        return h && h !== currentHandle;
+      }).slice(0, limit);
+
+      if (!targets.length) {
+        // 前台无历史 → 整段保持隐藏；编辑器里让占位卡片的轮播可以操作
+        if (designMode && window.LASTUCAS && window.LASTUCAS.initCarousel) {
+          window.LASTUCAS.initCarousel(root);
+        }
+        return;
+      }
+
+      Promise.all(targets.map(fetchProduct)).then(function (results) {
+        var products = results.filter(function (p) { return p && p.handle; });
+        if (!products.length) return;
+
+        var slider = root.querySelector('[data-rec-slider]');
+        if (!slider) return;
+
+        slider.innerHTML = products.map(function (p) {
+          return '<div class="rec-slider__item">' + cardHTML(p) + '</div>';
+        }).join('');
+
+        root.style.display = '';
+
+        // 3) 内容不足一屏时不显示翻页控件
+        if (slider.scrollWidth <= slider.clientWidth + 2) {
+          var footer = root.querySelector('[data-rv-footer]');
+          if (footer) footer.style.display = 'none';
+        }
+
+        if (window.LASTUCAS && window.LASTUCAS.initCarousel) {
+          window.LASTUCAS.initCarousel(root);
+        }
+      });
+    }
+
+    function boot(scope) {
+      (scope || document).querySelectorAll('[data-recently-viewed]').forEach(function (el) {
+        init(el);
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function () { boot(); });
+    } else {
+      boot();
+    }
+
+    // 主题编辑器里 section 重新加载时重跑
+    document.addEventListener('shopify:section:load', function (e) {
+      var target = e.target;
+      if (!target || !target.querySelector) return;
+      var el = target.querySelector('[data-recently-viewed]');
+      if (!el) return;
+      delete el.dataset.rvInit;
+      el.querySelectorAll('[data-rec-slider]').forEach(function (s) { delete s.dataset.recInit; });
+      init(el);
+    });
+  })();
+</script>
+{% endraw %}
+
+{% schema %}
+{
+  "name": "Recently viewed",
+  "tag": "section",
+  "class": "section-recently-viewed",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "标题",
+      "default": "Recently viewed"
+    },
+    {
+      "type": "text",
+      "id": "link_text",
+      "label": "右侧链接文字",
+      "default": "Shop All Lighting"
+    },
+    {
+      "type": "url",
+      "id": "link_url",
+      "label": "右侧链接地址"
+    },
+    {
+      "type": "range",
+      "id": "products_to_show",
+      "label": "展示数量上限",
+      "min": 2,
+      "max": 12,
+      "step": 1,
+      "default": 8
+    },
+    {
+      "type": "checkbox",
+      "id": "full_width",
+      "label": "全宽显示",
+      "default": true
+    }
+  ]
+}
+{% endschema %}

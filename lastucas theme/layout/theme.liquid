@@ -20,6 +20,19 @@
   {% comment %} SEO / Open Graph {% endcomment %}
   {% render 'meta-tags' %}
 
+  {% comment %} 品牌 Web Font（Inter）
+     背景：theme 之前只在 CSS 里声明 --font-body: Inter，却没有输出字体文件，
+     导致浏览器静默回退到 Helvetica Neue / Arial（移动端为系统字体）。
+     ⚠️ 实测结论：font_face 过滤器只返回 @font-face 的 CSS 文本，**不包含 <style> 包裹**
+     （也没有 preload link）。所以绝不能直接 {{ }} 输出，否则这段 CSS 会被浏览器
+     当成正文渲染到页面上。必须先 capture 再包进 <style>。 {% endcomment %}
+  {%- capture lc_font_faces -%}
+  {{ settings.font_body | font_face: font_display: 'swap' }}
+  {{ settings.font_body | font_modify: 'weight', 'bold' | font_face: font_display: 'swap' }}
+  {{ settings.font_heading | font_face: font_display: 'swap' }}
+  {%- endcapture -%}
+  <style>{{ lc_font_faces | strip }}</style>
+
   {% comment %} 全局样式（一个文件） {% endcomment %}
   {{ 'base.css' | asset_url | stylesheet_tag }}
 
@@ -204,7 +217,7 @@
     <button type="button" class="product-page__lightbox-close" data-lightbox-close aria-label="Close">
       <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
-    <div class="product-page__lightbox-stage">
+    <div class="product-page__lightbox-stage" data-lightbox-stage>
       <button type="button" class="product-page__lightbox-arrow product-page__lightbox-arrow--prev" data-lightbox-prev aria-label="Previous image">
         <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
       </button>

@@ -1,9 +1,9 @@
 {%- comment %}
-  Product Accordion - Description / Specs / Shipping 三组手风琴
+  Product Accordion - Description / Shipping 两组手风琴
   参数：product、shipping_text（可编辑文案，来自 section settings）
+  注：Specifications 组已移除（2026-10-16）——参数规格统一在下方 A+ 详情区维护，避免重复
 {%- endcomment -%}
 {%- assign p = product -%}
-{%- assign sv = p.selected_or_first_available_variant -%}
 <div class="product-accordion">
   {%- if p.description != blank -%}
     <details class="product-accordion__item" open>
@@ -13,24 +13,6 @@
   {%- endif -%}
 
   <details class="product-accordion__item"{% unless p.description != blank %} open{% endunless %}>
-    <summary class="product-accordion__summary">Specifications <span class="icon" aria-hidden="true">+</span></summary>
-    <div class="product-accordion__content">
-      <dl class="product-accordion__spec-row">
-        {%- if sv.sku != blank -%}<dt>SKU</dt><dd>{{ sv.sku | escape }}</dd>{%- endif -%}
-        {%- if p.vendor != blank -%}<dt>Brand</dt><dd>{{ p.vendor | escape }}</dd>{%- endif -%}
-        {%- if p.type != blank -%}<dt>Type</dt><dd>{{ p.type | escape }}</dd>{%- endif -%}
-        {%- if p.metafields.custom.specifications != blank -%}
-          {%- assign specs = p.metafields.custom.specifications.value -%}
-          {%- for spec in specs -%}
-            <dt>{{ spec[0] | escape }}</dt>
-            <dd>{{ spec[1] | escape }}</dd>
-          {%- endfor -%}
-        {%- endif -%}
-      </dl>
-    </div>
-  </details>
-
-  <details class="product-accordion__item">
     <summary class="product-accordion__summary">Shipping &amp; Returns <span class="icon" aria-hidden="true">+</span></summary>
     <div class="product-accordion__content">
       <p>{{ shipping_text | escape | newline_to_br }}</p>
